@@ -21,6 +21,7 @@ public class ConfigurationUtil {
      */
     public ConfigurationUtil() {
     }
+
     
     private static Properties getConfiguration() throws IOException {
         if(configuration.isEmpty()){
@@ -34,7 +35,8 @@ public class ConfigurationUtil {
      * @throws IOException In case of the configuration file read failure
      */
     private static void loadConfiguration() throws IOException{
-        File nf = new File(DEFAULT_CONFIG_PATH);
+        String configFile = System.getProperty("config.file", DEFAULT_CONFIG_PATH);
+        File nf = new File(configFile);
         InputStream in = new FileInputStream(nf);// DEFAULT_CONFIG_PATH.getClass().getResourceAsStream(DEFAULT_CONFIG_PATH);
         try {
             configuration.load(in);
