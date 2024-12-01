@@ -1,4 +1,6 @@
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import utils.ConfigurationUtil;
@@ -13,48 +15,28 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class ConfigurationUtilTest {
-    private static final Logger log = LoggerFactory.getLogger(CarPoolingClientTest.class);
-    @Test
-    void testLoadProperties() throws Exception {
-        // Устанавливаем путь к тестовому файлу
-        System.setProperty("config.file", "./src/main/resources/environment.properties");
-        log.info(System.getProperty("config.file"));
-        // Проверяем значения
-        testConfigurationEntry();
+    private static final Logger log = LoggerFactory.getLogger(ConfigurationUtilTest.class);
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "./src/main/resources/environment.properties",
+            "./src/main/resources/environment.yml",
+            "./src/main/resources/environment.xml"
+    })
+    void testLoadConfiguration(String configFilePath) throws Exception {
+        System.setProperty("config.file", configFilePath);
+
+
+        assertEquals("jdbc:postgresql://localhost:5432/mydatabase", ConfigurationUtil.getConfigurationEntry("db.url"));
+        assertEquals("admin", ConfigurationUtil.getConfigurationEntry("db.user"));
+        assertEquals("password", ConfigurationUtil.getConfigurationEntry("db.password"));
+
+        log.info("Config File: {}", configFilePath);
+        log.info("db.url: {}", ConfigurationUtil.getConfigurationEntry("db.url"));
+        log.info("db.user: {}", ConfigurationUtil.getConfigurationEntry("db.user"));
+        log.info("db.password: {}", ConfigurationUtil.getConfigurationEntry("db.password"));
     }
 
-    @Test
-    void testLoadYaml() throws Exception {
-        // Устанавливаем путь к тестовому файлу
-        System.setProperty("config.file", "./src/main/resources/environment.yml");
-        log.info(System.getProperty("config.file"));
-
-        // Проверяем значения
-        testConfigurationEntry();
-    }
-
-    @Test
-    void testLoadXml() throws Exception{
-        // Устанавливаем путь к тестовому файлу
-        System.setProperty("config.file", "./src/main/resources/environment.xml");
-        log.info(System.getProperty("config.file"));
-
-        // Проверяем значения
-        testConfigurationEntry();
-    }
-
-    void testConfigurationEntry()  {
-        try {
-            assertEquals("jdbc:postgresql://localhost:5432/mydatabase", ConfigurationUtil.getConfigurationEntry("db.url"));
-            assertEquals("admin", ConfigurationUtil.getConfigurationEntry("db.user"));
-            assertEquals("password", ConfigurationUtil.getConfigurationEntry("db.password"));
-            log.info(ConfigurationUtil.getConfigurationEntry("db.url"));
-            log.info(ConfigurationUtil.getConfigurationEntry("db.user"));
-            log.info(ConfigurationUtil.getConfigurationEntry("db.password"));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
     @Test
     void testGetConfigList() throws IOException{
         System.setProperty("config.file", "./src/main/resources/environment.properties");
