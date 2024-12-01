@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+    <comment>Configuration properties example</comment>
+    <entry key="db.url">jdbc:postgresql://localhost:5432/mydatabase</entry>
+    <entry key="db.user">admin</entry>
+    <entry key="db.password">password</entry>
+    <entry key="working.directory">/path/to/working/directory</entry>
+    <entry key="planets">Земля,Сатурн,Марс,Венера</entry>
+    <entry key="months">1:Январь,2:Февраль,3:Март,4:Апрель,5:Май,6:Июнь,7:Июль,8:Август,9:Сентябрь,10:Октябрь,11:Ноябрь,12:Декабрь</entry>
+</properties>
