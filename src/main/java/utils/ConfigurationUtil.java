@@ -9,7 +9,7 @@ import utils.loders.YamlConfigLoader;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.Properties;
 
 
 public class ConfigurationUtil {
@@ -34,9 +34,18 @@ public class ConfigurationUtil {
     private static void loadConfiguration() throws IOException {
         String configFile = System.getProperty("config.file", DEFAULT_CONFIG_PATH);
         File nf = new File(configFile);
-        String extension = getFileExtension(nf.getName());
-        ConfigLoader loader = getLoaderForExtension(extension);
-        configuration = loader.load(nf);
+        if (!nf.exists()) {
+            log.error("Configuration file not found: {}", configFile);
+            throw new IOException("Configuration file not found: " + configFile);
+        }
+        try {
+            String extension = getFileExtension(nf.getName());
+            ConfigLoader loader = getLoaderForExtension(extension);
+            configuration = loader.load(nf);
+        } catch (IOException e) {
+            log.error("Failed to load configuration from {}", configFile, e);
+            throw new IOException("Error loading configuration file: " + configFile, e);
+        }
     }
 
     /**
@@ -49,51 +58,31 @@ public class ConfigurationUtil {
         return getConfiguration().getProperty(key);
     }
 
-    private static ConfigLoader getLoaderForExtension(String extension) {
-        switch (extension.toLowerCase()) {
-            case "properties":
-                return new PropertiesConfigLoader();
-            case "yml":
-            case "yaml":
-                return new YamlConfigLoader();
-            case "xml":
-                return new XmlConfigLoader();
-            default:
+    private static ConfigLoader getLoaderForExtension(String extension) throws IllegalArgumentException {
+        return switch (extension.toLowerCase()) {
+            case "properties" -> new PropertiesConfigLoader();
+            case "yml", "yaml" -> new YamlConfigLoader();
+            case "xml" -> new XmlConfigLoader();
+            default -> {
+                log.error("Unsupported file format: {}", extension);
                 throw new IllegalArgumentException("Unsupported file format: " + extension);
-        }
+            }
+        };
     }
     private static String getFileExtension(String fileName) {
         int dotIndex = fileName.lastIndexOf('.');
-        return (dotIndex == -1) ? "" : fileName.substring(dotIndex + 1);
+        String extension = (dotIndex == -1) ? "" : fileName.substring(dotIndex + 1);
+        //Обнаруженное расширение файла
+        log.debug("Detected file extension: {}", extension);
+        return extension;
     }
 
-    /*public static List<String> getStringList(String key) throws IOException {
-        String value = getConfigurationEntry(key);
-        if (value == null) {
-            return Collections.emptyList();
+    public static void updateConfiguration() throws IllegalStateException {
+        try {
+            loadConfiguration();
+        } catch (IOException e) {
+            log.error("Failed to load configuration", e);
+            throw new IllegalStateException("Configuration update failed", e);
         }
-        return Arrays.asList(value.split(","));
     }
-
-    public static Map<Integer, String> getIntStringMap(String key) throws IOException {
-        String value = getConfigurationEntry(key);
-        if (value == null) {
-            return Collections.emptyMap();
-        }
-        Map<Integer, String> map = new HashMap<>();
-        String[] entries = value.split(",");
-        for (String entry : entries) {
-            String[] parts = entry.split(":");
-            if (parts.length == 2) {
-                try {
-                    int intKey = Integer.parseInt(parts[0].trim());
-                    map.put(intKey, parts[1].trim());
-                } catch (NumberFormatException e) {
-                    // Обработка ошибки преобразования
-                    log.info("Invalid integer key in configuration: {}", entry);
-                }
-            }
-        }
-        return map;
-    }*/
 }
