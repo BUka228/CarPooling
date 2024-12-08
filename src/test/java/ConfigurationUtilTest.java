@@ -1,9 +1,9 @@
+import com.man.Constants;
+import man.TestGener;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import utils.ConfigurationUtil;
 
 import java.io.IOException;
@@ -14,8 +14,8 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ConfigurationUtilTest {
-    private static final Logger log = LoggerFactory.getLogger(ConfigurationUtilTest.class);
+public class ConfigurationUtilTest extends TestGener {
+
 
     @ParameterizedTest
     @ValueSource(strings = {

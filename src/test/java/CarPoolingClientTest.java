@@ -1,13 +1,11 @@
+import man.TestGener;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public class CarPoolingClientTest {
-    private static final Logger log = LoggerFactory.getLogger(CarPoolingClientTest.class);
+public class CarPoolingClientTest extends TestGener {
+
 
     @Test
     public void testLogBasicSystemInfo() {
-        Logger log = LoggerFactory.getLogger(CarPoolingClientTest.class);
         log.info("Launching the application...");
         log.info("Operating System: {} {}", System.getProperty("os.name"), System.getProperty("os.version"));
         log.info("JRE: {}", System.getProperty("java.version"));
@@ -18,5 +16,4 @@ public class CarPoolingClientTest {
         log.info("User Working Directory: {}", System.getProperty("user.dir"));
         log.info("Test INFO logging.");
     }
-
 }

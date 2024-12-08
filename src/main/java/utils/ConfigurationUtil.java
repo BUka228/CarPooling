@@ -35,16 +35,16 @@ public class ConfigurationUtil {
         String configFile = System.getProperty("config.file", DEFAULT_CONFIG_PATH);
         File nf = new File(configFile);
         if (!nf.exists()) {
-            log.error("Configuration file not found: {}", configFile);
-            throw new IOException("Configuration file not found: " + configFile);
+            log.error("Файл конфигурации не найден: {}", configFile);
+            throw new IOException("Файл конфигурации не найден: " + configFile);
         }
         try {
             String extension = getFileExtension(nf.getName());
             ConfigLoader loader = getLoaderForExtension(extension);
             configuration = loader.load(nf);
         } catch (IOException e) {
-            log.error("Failed to load configuration from {}", configFile, e);
-            throw new IOException("Error loading configuration file: " + configFile, e);
+            log.error("Не удалось загрузить конфигурацию из {}", configFile, e);
+            throw new IOException("Ошибка загрузки файла конфигурации: " + configFile, e);
         }
     }
 
@@ -55,7 +55,12 @@ public class ConfigurationUtil {
      * @throws IOException In case of the configuration file read failure
      */
     public static String getConfigurationEntry(String key) throws IOException {
-        return getConfiguration().getProperty(key);
+        try {
+            return getConfiguration().getProperty(key);
+        } catch (IOException e) {
+            log.error("Ошибка чтения ко ключу конфигурации {} {}", key, e);
+            throw new IOException("Ошибка чтения ко ключу конфигурации", e);
+        }
     }
 
     private static ConfigLoader getLoaderForExtension(String extension) throws IllegalArgumentException {
@@ -64,8 +69,8 @@ public class ConfigurationUtil {
             case "yml", "yaml" -> new YamlConfigLoader();
             case "xml" -> new XmlConfigLoader();
             default -> {
-                log.error("Unsupported file format: {}", extension);
-                throw new IllegalArgumentException("Unsupported file format: " + extension);
+                log.error("Неподдерживаемый формат файла: {}", extension);
+                throw new IllegalArgumentException("Неподдерживаемый формат файла: " + extension);
             }
         };
     }
@@ -73,7 +78,7 @@ public class ConfigurationUtil {
         int dotIndex = fileName.lastIndexOf('.');
         String extension = (dotIndex == -1) ? "" : fileName.substring(dotIndex + 1);
         //Обнаруженное расширение файла
-        log.debug("Detected file extension: {}", extension);
+        log.debug("Обнаруженное расширение файла: {}", extension);
         return extension;
     }
 
@@ -81,8 +86,8 @@ public class ConfigurationUtil {
         try {
             loadConfiguration();
         } catch (IOException e) {
-            log.error("Failed to load configuration", e);
-            throw new IllegalStateException("Configuration update failed", e);
+            log.error("Не удалось загрузить конфигурацию", e);
+            throw new IllegalStateException("Обновление конфигурации не удалось", e);
         }
     }
 }

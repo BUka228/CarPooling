@@ -1,3 +1,5 @@
+package com.man;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -7,7 +9,7 @@ public class CarPoolingClient {
     private static final Logger log = LoggerFactory.getLogger(CarPoolingClient.class);
 
     CarPoolingClient() {
-        log.debug("CarPoolingClient[0]: starting application.........");
+        log.debug("com.man.CarPoolingClient[0]: starting application.........");
         logBasicSystemInfo();
     }
     private void logBasicSystemInfo() {
