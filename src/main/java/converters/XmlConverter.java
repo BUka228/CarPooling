@@ -39,6 +39,7 @@ public class XmlConverter<T> implements GenericConverter<T, String> {
         }
     }
 
+
     @Override
     public String getId(T entity) {
         try {

@@ -1,12 +1,16 @@
 package model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 public class HistoryContent {
+    private static final Logger log = LoggerFactory.getLogger(HistoryContent.class);
     private String id;
     private String className;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
@@ -18,6 +22,7 @@ public class HistoryContent {
 
     // Константа для значения actor по умолчанию
     public static final String DEFAULT_ACTOR = "system";
+
     public HistoryContent() {}
 
     public HistoryContent(
@@ -89,6 +94,35 @@ public class HistoryContent {
                 ", object=" + object +
                 ", status=" + status +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        HistoryContent that = (HistoryContent) o;
+        /*log.info("ffffffffffff {}",createdDate.toString());
+        log.info("{} : {} \n {} : {} \n {} : {} \n {} : {} \n {} : {} \n {} : {} \n {} : {}",
+                id, that.id,
+                className, that.className,
+                createdDate, that.createdDate,
+                actor, that.actor,
+                methodName, that.methodName,
+                object, that.object,
+                status, that.status
+                );*/
+        return Objects.equals(id, that.id) &&
+                Objects.equals(className, that.className) &&
+                Objects.equals(createdDate, that.createdDate) &&
+                Objects.equals(actor, that.actor) &&
+                Objects.equals(methodName, that.methodName) &&
+                Objects.equals(object, that.object) &&
+                status == that.status;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, className, createdDate, actor, methodName, object, status);
     }
 }
 

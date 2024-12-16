@@ -39,7 +39,7 @@ public class ConfigurationUtilTest extends TestGener {
 
     @Test
     void testGetConfigList() throws IOException{
-        System.setProperty("config.file", "./src/main/resources/environment.properties");
+        System.setProperty("config.file", "./src/main/resources/environment.yml");
         log.info(System.getProperty("config.file"));
 
         String planetsString = ConfigurationUtil.getConfigurationEntry("planets");

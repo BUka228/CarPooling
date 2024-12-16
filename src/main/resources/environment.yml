@@ -1,4 +1,4 @@
-db.url: jdbc:postgresql://localhost:5432/mydatabase
+﻿db.url: jdbc:postgresql://localhost:5432/mydatabase
 db.user: admin
 db.password: password
 working.directory: /path/to/working/directory

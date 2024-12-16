@@ -2,6 +2,7 @@ package converters;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import exceptions.ConverterException;
 import org.bson.Document;
 
@@ -12,6 +13,7 @@ public class MongoConverter<T> implements GenericConverter<T, Document> {
     public MongoConverter(Class<T> type) {
         this.type = type;
         this.objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
     }
 
     @Override
