@@ -21,6 +21,9 @@ public record JdbcDataProvider(Connection connection) {
             ps.setString(7, user.getAddress());
             ps.setString(8, user.getPreferences());
             ps.executeUpdate();
+        } catch (SQLException e) {
+            log.error("Error creating user: {}", e.getMessage());
+            throw e;
         }
     }
 
@@ -42,6 +45,9 @@ public record JdbcDataProvider(Connection connection) {
                         rs.getString("preferences")
                 );
             }
+        } catch (SQLException e) {
+            log.error("Error getting user by id: {}", e.getMessage());
+            throw e;
         }
         return null;
     }
@@ -59,6 +65,9 @@ public record JdbcDataProvider(Connection connection) {
             ps.setString(8, user.getPreferences());
             ps.setInt(9, user.getId());
             ps.executeUpdate();
+        } catch (SQLException e) {
+            log.error("Error updating user: {}", e.getMessage());
+            throw e;
         }
     }
 
@@ -67,6 +76,9 @@ public record JdbcDataProvider(Connection connection) {
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, id);
             ps.executeUpdate();
+        } catch (SQLException e) {
+            log.error("Error deleting user: {}", e.getMessage());
+            throw e;
         }
     }
 
@@ -82,6 +94,9 @@ public record JdbcDataProvider(Connection connection) {
             ps.setInt(6, userId);
             ps.setInt(7, routeId);
             ps.executeUpdate();
+        } catch (SQLException e) {
+            log.error("Error creating trip: {}", e.getMessage());
+            throw e;
         }
     }
 
@@ -100,6 +115,9 @@ public record JdbcDataProvider(Connection connection) {
                         rs.getBoolean("editable")
                 );
             }
+        } catch (SQLException e) {
+            log.error("Error getting trip by id: {}", e.getMessage());
+            throw e;
         }
         return null;
     }
@@ -115,6 +133,9 @@ public record JdbcDataProvider(Connection connection) {
             ps.setInt(6, routeId); // Новый маршрут
             ps.setInt(7, trip.getId());
             ps.executeUpdate();
+        } catch (SQLException e) {
+            log.error("Error updating trip: {}", e.getMessage());
+            throw e;
         }
     }
 
@@ -123,20 +144,20 @@ public record JdbcDataProvider(Connection connection) {
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, id);
             ps.executeUpdate();
+        } catch (SQLException e) {
+            log.error("Error deleting trip: {}", e.getMessage());
+            throw e;
         }
     }
 
     public int createRoute(Route route) throws SQLException {
         String sql = "INSERT INTO Route (startPoint, endPoint, date, estimatedDuration) VALUES (?, ?, ?, ?)";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            log.info(route.getStartPoint());
             ps.setString(1, route.getStartPoint());
-            log.info(route.getStartPoint());
             ps.setString(2, route.getEndPoint());
             ps.setDate(3, new java.sql.Date(route.getDate().getTime()));
             ps.setShort(4, route.getEstimatedDuration());
             ps.executeUpdate();
-
             // Получение сгенерированного id
             ResultSet generatedKeys = ps.getGeneratedKeys();
             if (generatedKeys.next()) {
@@ -144,6 +165,9 @@ public record JdbcDataProvider(Connection connection) {
             } else {
                 throw new SQLException("Failed to create Route, no ID obtained.");
             }
+        } catch (SQLException e) {
+            log.error("Error creating route: {}", e.getMessage());
+            throw e;
         }
     }
 
@@ -161,6 +185,9 @@ public record JdbcDataProvider(Connection connection) {
                         rs.getShort("estimatedDuration")
                 );
             }
+        } catch (SQLException e) {
+            log.error("Error getting route by id: {}", e.getMessage());
+            throw e;
         }
         return null;
     }
@@ -174,6 +201,9 @@ public record JdbcDataProvider(Connection connection) {
             ps.setShort(4, route.getEstimatedDuration());
             ps.setInt(5, route.getId());
             ps.executeUpdate();
+        } catch (SQLException e) {
+            log.error("Error updating route: {}", e.getMessage());
+            throw e;
         }
     }
 
@@ -182,6 +212,9 @@ public record JdbcDataProvider(Connection connection) {
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, id);
             ps.executeUpdate();
+        } catch (SQLException e) {
+            log.error("Error deleting route: {}", e.getMessage());
+            throw e;
         }
     }
 
@@ -194,6 +227,9 @@ public record JdbcDataProvider(Connection connection) {
             ps.setDate(3, new java.sql.Date(rating.getDate().getTime()));
             ps.setInt(4, tripId);
             ps.executeUpdate();
+        } catch (SQLException e) {
+            log.error("Error creating rating: {}", e.getMessage());
+            throw e;
         }
     }
 
@@ -210,6 +246,9 @@ public record JdbcDataProvider(Connection connection) {
                         rs.getDate("date")
                 );
             }
+        } catch (SQLException e) {
+            log.error("Error getting rating by id: {}", e.getMessage());
+            throw e;
         }
         return null;
     }
@@ -222,6 +261,9 @@ public record JdbcDataProvider(Connection connection) {
             ps.setDate(3, new java.sql.Date(rating.getDate().getTime()));
             ps.setInt(4, rating.getId());
             ps.executeUpdate();
+        } catch (SQLException e) {
+            log.error("Error updating rating: {}", e.getMessage());
+            throw e;
         }
     }
 
@@ -230,6 +272,9 @@ public record JdbcDataProvider(Connection connection) {
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, id);
             ps.executeUpdate();
+        } catch (SQLException e) {
+            log.error("Error deleting rating: {}", e.getMessage());
+            throw e;
         }
     }
 
@@ -245,6 +290,9 @@ public record JdbcDataProvider(Connection connection) {
             ps.setInt(6, tripId);
             ps.setInt(7, userId);
             ps.executeUpdate();
+        } catch (SQLException e) {
+            log.error("Error creating booking: {}", e.getMessage());
+            throw e;
         }
     }
 
@@ -263,6 +311,9 @@ public record JdbcDataProvider(Connection connection) {
                         rs.getDate("passportExpiryDate")
                 );
             }
+        } catch (SQLException e) {
+            log.error("Error getting booking by id: {}", e.getMessage());
+            throw e;
         }
         return null;
     }
@@ -277,6 +328,9 @@ public record JdbcDataProvider(Connection connection) {
             ps.setDate(5, new java.sql.Date(booking.getPassportExpiryDate().getTime()));
             ps.setInt(6, booking.getId());
             ps.executeUpdate();
+        } catch (SQLException e) {
+            log.error("Error updating booking: {}", e.getMessage());
+            throw e;
         }
     }
 
@@ -285,6 +339,9 @@ public record JdbcDataProvider(Connection connection) {
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, id);
             ps.executeUpdate();
+        } catch (SQLException e) {
+            log.error("Error deleting booking: {}", e.getMessage());
+            throw e;
         }
     }
 }
