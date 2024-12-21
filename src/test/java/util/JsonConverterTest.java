@@ -1,7 +1,10 @@
+package util;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
-import man.TestGener;
+import lombok.extern.slf4j.Slf4j;
+
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -10,7 +13,8 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class JsonConverterTest extends TestGener {
+@Slf4j
+public class JsonConverterTest{
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -82,7 +86,6 @@ public class JsonConverterTest extends TestGener {
 
     @Test
     public void testObjectListToMapList_exception() {
-
     }
 
 

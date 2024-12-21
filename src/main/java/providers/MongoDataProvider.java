@@ -1,88 +1,109 @@
 package providers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.client.MongoCollection;
-import converters.GenericConverter;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.ReplaceOptions;
 import exceptions.DataProviderException;
+import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import utils.MongoDBUtil;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+@Slf4j
 public class MongoDataProvider<T> implements IDataProvider<T> {
     private final MongoCollection<Document> collection;
-    private final GenericConverter<T, Document> converter;
-    private static final Logger log = LoggerFactory.getLogger(MongoDataProvider.class);
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final Class<T> type;
 
-    public MongoDataProvider(MongoCollection<Document> collection, GenericConverter<T, Document> converter) {
+
+    public MongoDataProvider(MongoCollection<Document> collection, Class<T> type) {
         this.collection = collection;
-        this.converter = converter;
+        this.type = type;
+    }
+
+    @Override
+    public void initDataSource(String filePath) {
+        // Инициализация MongoDB не требует создания файлов или начальных данных.
+        log.info("MongoDB collection initialized: {}", collection.getNamespace().getCollectionName());
     }
 
     @Override
     public void saveRecord(T record) {
         try {
-            Document doc = converter.serialize(record);
-            collection.insertOne(doc);
-            log.info("Запись с ID {} успешно сохранена в MongoDB", converter.getId(record));
+            String id = extractId(record); // Получаем значение id
+            Document document = Document.parse(objectMapper.writeValueAsString(record));
+            // Устанавливаем значение _id
+            document.put("_id", id);
+            document.remove("id"); // Удаляем поле "id", чтобы не дублировать
+            // Сохраняем документ в коллекцию с upsert
+            collection.replaceOne(Filters.eq("_id", id), document, new ReplaceOptions().upsert(true));
         } catch (Exception e) {
-            log.error("Ошибка при сохранении записи в MongoDB: {}", e.getMessage(), e);
-            throw new DataProviderException("Ошибка при сохранении записи в MongoDB", e);
+            log.error("Ошибка при сохранении записи: {}", record, e);
+            throw new DataProviderException("Не удалось сохранить запись", e);
         }
     }
 
     @Override
-    public void deleteRecord(T record) {
+    public void deleteRecord(long id) {
         try {
-            Document query = new Document("id", converter.getId(record));
-            collection.deleteOne(query);
-            log.info("Запись с ID {} успешно удалена из MongoDB", converter.getId(record));
+            collection.deleteOne(Filters.eq("_id", String.valueOf(id)));
         } catch (Exception e) {
-            log.error("Ошибка при удалении записи из MongoDB: {}", e.getMessage(), e);
-            throw new DataProviderException("Ошибка при удалении записи из MongoDB", e);
+            log.error("Ошибка при удалении записи с ID: {}", id, e);
+            throw new DataProviderException("Не удалось удалить запись", e);
         }
     }
 
     @Override
-    public T getRecordById(String id) {
+    public T getRecordById(long id) {
         try {
-            Document query = new Document("id", id);
-            Document doc = collection.find(query).first();
-
-            if (doc != null) {
-                log.info("Запись с ID {} найдена в MongoDB", id);
-                doc.remove("_id");
-                return converter.deserialize(doc);
-            } else {
-                log.warn("Запись с ID {} не найдена в MongoDB", id);
-                return null;
+            Document document = collection.find(Filters.eq("_id", String.valueOf(id))).first();
+            if (document != null) {
+                nameChangeId(document);
+                return objectMapper.readValue(document.toJson(), type);
             }
+            throw new Exception();
         } catch (Exception e) {
-            log.error("Ошибка при получении записи из MongoDB по ID {}: {}", id, e.getMessage(), e);
-            throw new DataProviderException("Ошибка при получении записи из MongoDB по ID", e);
+            log.error("Ошибка при получении записи с ID: {}", id, e);
+            throw new DataProviderException("Не удалось получить запись", e);
         }
     }
 
     @Override
     public List<T> getAllRecords() {
         try {
-            List<T> result = new ArrayList<>();
-            for (Document doc : collection.find()) {
-                doc.remove("_id");
-                result.add(converter.deserialize(doc));
+            List<T> records = new ArrayList<>();
+            for (Document document : collection.find()) {
+                Object idValue = document.get("_id");
+                nameChangeId(document);
+                records.add(objectMapper.readValue(document.toJson(), type));
             }
-            log.info("Получено {} записей из MongoDB", result.size());
-            return result;
+            return records;
         } catch (Exception e) {
-            log.error("Ошибка при получении всех записей из MongoDB: {}", e.getMessage(), e);
-            throw new DataProviderException("Ошибка при получении всех записей из MongoDB", e);
+            log.error("Ошибка при чтении всех записей", e);
+            throw new DataProviderException("Не удалось прочитать все записи", e);
         }
     }
 
-    @Override
-    public void initDataSource() {
-        // MongoDB не требует явной инициализации
-        log.info("Инициализация источника данных MongoDB не требуется.");
+    private String extractId(T record) {
+        try {
+            return objectMapper.convertValue(record, Document.class).get("id").toString();
+        } catch (Exception e) {
+            throw new DataProviderException("Не удалось извлечь ID из записи", e);
+        }
+    }
+
+    private  void nameChangeId(Document document) {
+        Object idValue = document.get("_id");
+        if (idValue != null) {
+            document.put("id", idValue);
+            document.remove("_id");
+        }
     }
 }

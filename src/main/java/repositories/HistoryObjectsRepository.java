@@ -1,9 +1,8 @@
 package repositories;
 
 import com.mongodb.client.MongoCollection;
-import converters.MongoConverter;
 import exceptions.RepositoryException;
-import model.HistoryContent;
+import model.history.HistoryContent;
 import org.bson.Document;
 import providers.IDataProvider;
 import providers.MongoDataProvider;
@@ -17,9 +16,7 @@ public class HistoryObjectsRepository extends GenericRepository<HistoryContent> 
 
     // Фабричный метод для создания репозитория с настройками по умолчанию
     public static HistoryObjectsRepository defaultMongoRepository(MongoCollection<Document> collection) {
-        MongoConverter<HistoryContent> converter = new MongoConverter<>(HistoryContent.class);
-        MongoDataProvider<HistoryContent> provider = new MongoDataProvider<>(collection, converter);
-        return new HistoryObjectsRepository(provider);
+        return new HistoryObjectsRepository(new MongoDataProvider<>(collection, HistoryContent.class));
     }
 
     public List<HistoryContent> findByActor(String actor) {
@@ -31,5 +28,4 @@ public class HistoryObjectsRepository extends GenericRepository<HistoryContent> 
             throw new RepositoryException("Ошибка при поиске историй по actor: " + actor, e);
         }
     }
-
 }

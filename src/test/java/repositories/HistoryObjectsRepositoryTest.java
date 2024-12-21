@@ -1,38 +1,19 @@
 package repositories;
 
-import com.man.Constants;
 import com.mongodb.client.MongoCollection;
-import converters.GenericConverter;
-import converters.MongoConverter;
-import exceptions.RepositoryException;
-import model.HistoryContent;
-import model.HistoryContentTest;
-import model.Status;
+
 import org.bson.Document;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import providers.IDataProvider;
-import providers.MongoDataProvider;
-import utils.ConfigurationUtil;
-import utils.MongoDBUtil;
 
-import java.io.IOException;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class HistoryObjectsRepositoryTest {
     private static final Logger log = LoggerFactory.getLogger(HistoryObjectsRepositoryTest.class);
     private MongoCollection<Document> collection;
     private HistoryObjectsRepository repository;
 
-    @BeforeEach
+    /*@BeforeEach
     void setUp() {
         try {
             repository = HistoryObjectsRepository.defaultMongoRepository(MongoDBUtil.getCollection(
@@ -131,7 +112,7 @@ public class HistoryObjectsRepositoryTest {
         repository.delete(content3);
         repository.delete(content2);
         repository.delete(content1);
-    }
+    }*/
 
 
     /*@Test

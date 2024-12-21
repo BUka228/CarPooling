@@ -1,130 +1,95 @@
 package providers;
 
-import converters.GenericConverter;
-import converters.XmlConverter;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import model.HistoryContentTest;
 import org.junit.jupiter.api.*;
-import org.mockito.Mockito;
-
-import java.io.File;
-import java.nio.file.Files;
-import java.util.List;
+import java.io.IOException;
+import java.nio.file.*;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 class XmlDataProviderTest {
-    private static final String FILE_PATH = "test.xml";
+
+    private static final String TEMP_FILE_PREFIX = "xml_data_provider_test";
+    private Path tempFile;
     private XmlDataProvider<HistoryContentTest> dataProvider;
-    private GenericConverter<HistoryContentTest, String> mockConverter;
 
     @BeforeEach
-    void setUp() {
-        mockConverter = mock(GenericConverter.class);
-        dataProvider = new XmlDataProvider<>(FILE_PATH, mockConverter);
+    void setUp() throws IOException {
+        // Создаем временный файл
+        //tempFile = Files.createFile(Paths.get(TEMP_FILE_PREFIX + ".xml"));
+        tempFile = Files.createTempFile(TEMP_FILE_PREFIX, ".xml");
+        dataProvider = new XmlDataProvider<>(HistoryContentTest.class);
+        dataProvider.initDataSource(tempFile.toString());
     }
 
     @AfterEach
-    void tearDown() {
-        File file = new File(FILE_PATH);
-        if (file.exists()) {
-            file.delete();
-        }
+    void tearDown() throws IOException {
+        // Удаляем временный файл
+        Files.deleteIfExists(tempFile);
     }
 
     @Test
-    void testSaveRecord_Success() {
-        HistoryContentTest content = new HistoryContentTest("1", "user", "CREATE", "Sample Content");
+    void testSaveRecordAndGetAllRecords() {
+        HistoryContentTest record1 = new HistoryContentTest("1", "Alice", "create", "Test content 1");
+        HistoryContentTest record2 = new HistoryContentTest("2", "Bob", "update", "Test content 2");
 
-        try {
-            when(mockConverter.serialize(any())).thenReturn("<records><record>...</record></records>");
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        when(mockConverter.getId(content)).thenReturn("1");
-        /*XmlConverter<HistoryContentTest> conv = new XmlConverter<>(HistoryContentTest.class);
-        XmlDataProvider<H> dataProvider1 = new XmlDataProvider<>(FILE_PATH, conv);*/
+        dataProvider.saveRecord(record1);
+        dataProvider.saveRecord(record2);
 
-
-        assertDoesNotThrow(() -> dataProvider.saveRecord(content));
-
-        File file = new File(FILE_PATH);
-        assertTrue(file.exists(), "XML файл не был создан");
+        List<HistoryContentTest> records = dataProvider.getAllRecords();
+        assertEquals(2, records.size());
+        assertTrue(records.contains(record1));
+        assertTrue(records.contains(record2));
     }
 
     @Test
-    void testGetRecordById_Success() {
-        HistoryContentTest content = new HistoryContentTest("1", "user", "CREATE", "Sample Content");
-        // Пример XML, который будет возвращён мок-объектом при вызове serialize
-        String mockXml = "<records>" +
-                "<id>1</id>" +
-                "<actor>user</actor>" +
-                "<action>CREATE</action>" +
-                "<content>Sample Content</content>" +
-                "</records>";
+    void testGetRecordById() {
+        HistoryContentTest record = new HistoryContentTest("1", "Alice", "create", "Test content");
 
-        try {
-            when(mockConverter.serialize(any())).thenReturn("mockXml");
-            when(mockConverter.getId(content)).thenReturn("1");
-            when(mockConverter.deserialize(anyString())).thenReturn(content);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        dataProvider.saveRecord(record);
 
-
-        dataProvider.saveRecord(content);
-
-        HistoryContentTest result = dataProvider.getRecordById("1");
-
-        assertNotNull(result, "Запись не должна быть null");
-        assertEquals("1", result.getId(), "ID не совпадает");
+        HistoryContentTest fetchedRecord = dataProvider.getRecordById(1L);
+        assertNotNull(fetchedRecord);
+        assertEquals("Alice", fetchedRecord.getActor());
+        assertEquals("create", fetchedRecord.getAction());
+        assertEquals("Test content", fetchedRecord.getContent());
     }
 
     @Test
-    void testGetAllRecords_Success() {
-        HistoryContentTest content1 = new HistoryContentTest("1", "user1", "CREATE", "Content1");
-        HistoryContentTest content2 = new HistoryContentTest("2", "user2", "UPDATE", "Content2");
-        String[] mockXmlRecords = {"<record1>", "<record2>"};
+    void testDeleteRecord() {
+        HistoryContentTest record1 = new HistoryContentTest("1", "Alice", "create", "Test content 1");
+        HistoryContentTest record2 = new HistoryContentTest("2", "Bob", "update", "Test content 2");
 
-        try {
-            when(mockConverter.deserialize(mockXmlRecords[0])).thenReturn(content1);
-            when(mockConverter.deserialize(mockXmlRecords[1])).thenReturn(content2);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        dataProvider.saveRecord(record1);
+        dataProvider.saveRecord(record2);
 
-        // Эмулируем вызов для каждого элемента
-        List<HistoryContentTest> results = null;
-        try {
-            results = List.of(
-                    mockConverter.deserialize(mockXmlRecords[0]),
-                    mockConverter.deserialize(mockXmlRecords[1])
-            );
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        dataProvider.deleteRecord(1L);
 
-        assertNotNull(results, "Список записей не должен быть null");
-        assertEquals(2, results.size(), "Количество записей не совпадает");
-        assertTrue(results.contains(content1), "Список не содержит первую запись");
-        assertTrue(results.contains(content2), "Список не содержит вторую запись");
+        List<HistoryContentTest> records = dataProvider.getAllRecords();
+        assertEquals(1, records.size());
+        assertFalse(records.contains(record1));
+        assertTrue(records.contains(record2));
     }
 
     @Test
-    void testInitDataSource_FileNotExist() {
-        File file = new File(FILE_PATH);
-        if (file.exists()) {
-            file.delete();
-        }
-
-        assertDoesNotThrow(() -> dataProvider.initDataSource());
-        assertTrue(file.exists(), "XML файл не был создан");
+    void testGetAllRecordsWhenFileIsEmpty() {
+        List<HistoryContentTest> records = dataProvider.getAllRecords();
+        assertTrue(records.isEmpty());
     }
 
+
     @Test
-    void testInitDataSource_FileExists() {
-        File file = new File(FILE_PATH);
-        assertDoesNotThrow(() -> dataProvider.initDataSource());
-        assertTrue(file.exists(), "XML файл должен существовать");
+    void testInitDataSourceCreatesNewFile() throws IOException {
+        Path newFile = Files.createTempFile("new_test_file", ".xml");
+        Files.deleteIfExists(newFile); // Удаляем файл, чтобы проверить создание
+
+        XmlDataProvider<HistoryContentTest> newDataProvider = new XmlDataProvider<>(HistoryContentTest.class);
+        newDataProvider.initDataSource(newFile.toString());
+
+        assertTrue(Files.exists(newFile));
+        Files.deleteIfExists(newFile);
     }
 }
+

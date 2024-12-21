@@ -1,6 +1,11 @@
-import man.TestGener;
+package util;
 
-public class MongoDbUtilTest extends TestGener {
+import lombok.extern.slf4j.Slf4j;
+
+
+
+@Slf4j
+public class MongoDbUtilTest {
 
     private static final String CONNECTION_STRING = "mongodb://localhost:27017";
     private static final String DB_NAME = "testDb";

@@ -1,128 +1,125 @@
 package providers;
 
-import converters.CsvConverter;
-import converters.GenericConverter;
+import static org.junit.jupiter.api.Assertions.*;
+
 import model.HistoryContentTest;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
+import java.nio.file.*;
+import java.io.*;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+public class CsvDataProviderTest {
 
-class CsvDataProviderTest {
-    private static final String FILE_PATH = "test.csv";
-    private static final Logger log = LoggerFactory.getLogger(CsvDataProviderTest.class);
+    private static Path tempFile;
     private CsvDataProvider<HistoryContentTest> dataProvider;
-    private GenericConverter<HistoryContentTest, String[]> mockConverter;
+
+    @BeforeAll
+    static void setUpBeforeClass() throws IOException {
+        // Создаем временный файл перед всеми тестами
+        //tempFile = Files.createFile(Paths.get("temp.csv"));
+        tempFile = Files.createTempFile("temp", ".csv");
+    }
+
+    @AfterAll
+    static void tearDownAfterClass() throws IOException {
+        // Удаляем временный файл после всех тестов
+        Files.deleteIfExists(tempFile);
+    }
 
     @BeforeEach
     void setUp() {
-        mockConverter = mock(GenericConverter.class);
-        dataProvider = new CsvDataProvider<>(FILE_PATH, mockConverter);
-    }
-
-    @Test
-    void testSaveRecord_Success() {
-        HistoryContentTest content = new HistoryContentTest("1", "user", "CREATE", "Sample Content");
-        String[] recordData = {"1", "user", "CREATE", "Sample Content"};
-
-        // Мокаем сериализацию
-        try {
-            when(mockConverter.serialize(content)).thenReturn(recordData);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-
-        assertDoesNotThrow(() -> dataProvider.saveRecord(content));
-
-        // Проверка, что файл был создан
-        File file = new File(FILE_PATH);
-        assertTrue(file.exists(), "CSV файл не существует");
-
-        // Очистка файла после теста
-        //file.delete();
-    }
-
-    @Test
-    void testGetRecordById_Success() {
-        HistoryContentTest content = new HistoryContentTest("1", "user", "CREATE", "Sample Content");
-
-        // Мокаем десериализацию
-        when(mockConverter.getId(content)).thenReturn("1");
-        try {
-            when(mockConverter.deserialize(new String[]{"1", "user", "CREATE", "Sample Content"})).thenReturn(content);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-
-        assertDoesNotThrow(() -> {
-            HistoryContentTest result = dataProvider.getRecordById("1");
-            assertNotNull(result, "Результат не должен быть null");
-            assertEquals("1", result.getId(), "ID не совпадает");
-        });
-    }
-
-    @Test
-    void testGetAllRecords_Success() {
-        HistoryContentTest content1 = new HistoryContentTest("1", "user", "CREATE", "Sample Content");
-        HistoryContentTest content2 = new HistoryContentTest("2", "user", "UPDATE", "Another Content");
-
-        try {
-            when(mockConverter.deserialize(new String[]{"1", "user", "CREATE", "Sample Content"})).thenReturn(content1);
-            when(mockConverter.deserialize(new String[]{"2", "user", "UPDATE", "Another Content"})).thenReturn(content2);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        /*CsvConverter<HistoryContentTest> converter = new CsvConverter<>(HistoryContentTest.class);
-        CsvDataProvider<HistoryContentTest> dataProvider2 = new CsvDataProvider<>(FILE_PATH, converter);
-        dataProvider2.saveRecord(content1);
-        dataProvider2.saveRecord(content2);
-        log.info(dataProvider2.getAllRecords().toString());*/
-
-
-
-
-        List<HistoryContentTest> records = dataProvider.getAllRecords();
-        assertNotNull(records, "Список записей не должен быть null");
-        assertEquals(2, records.size(), "Количество записей не совпадает");
-    }
-
-    @Test
-    void testInitDataSource_FileNotExist() {
-        File file = new File(FILE_PATH);
-        if (file.exists()) {
-            file.delete();
-        }
-
-        assertDoesNotThrow(() -> dataProvider.initDataSource());
-        assertTrue(file.exists(), "CSV файл не был создан");
-
-        // Очистка файла после теста
-        file.delete();
+        // Создаем новый экземпляр CsvDataProvider для каждого теста
+        dataProvider = new CsvDataProvider<>(HistoryContentTest.class);
+        dataProvider.initDataSource(tempFile.toString());
     }
 
     @Test
     void testInitDataSource_FileExists() {
-        File file = new File(FILE_PATH);
-        try {
-            file.createNewFile();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        // Проверяем, что при инициализации источник данных создается корректно
+        assertDoesNotThrow(() -> dataProvider.initDataSource(tempFile.toString()));
+    }
 
-        assertDoesNotThrow(() -> dataProvider.initDataSource());
-        assertTrue(file.exists(), "CSV файл должен существовать");
+    @Test
+    void testSaveRecord() {
+        HistoryContentTest record = new HistoryContentTest();
+        record.setId("1");
+        record.setActor("actor1");
+        record.setAction("action1");
+        record.setContent("content1");
 
-        // Очистка файла после теста
-        file.delete();
+        List<HistoryContentTest> records1 = dataProvider.getAllRecords();
+
+        // Сохраняем запись
+        assertDoesNotThrow(() -> dataProvider.saveRecord(record));
+
+        // Проверяем, что запись сохранена
+        List<HistoryContentTest> records2 = dataProvider.getAllRecords();
+        HistoryContentTest savedRecord = records2.get(records2.size() - 1);
+        assertEquals(records1.size() + 1, records2.size());
+        assertEquals(record, savedRecord);
+    }
+
+    @Test
+    void testDeleteRecord() {
+        HistoryContentTest record = new HistoryContentTest();
+        record.setId("1");
+        record.setActor("actor1");
+        record.setAction("action1");
+        record.setContent("content1");
+
+        dataProvider.saveRecord(record);
+        List<HistoryContentTest> records1 = dataProvider.getAllRecords();
+
+
+        // Удаляем запись
+        assertDoesNotThrow(() -> dataProvider.deleteRecord(1));
+
+        // Проверяем, что запись удалена
+        List<HistoryContentTest> records2 = dataProvider.getAllRecords();
+        assertEquals(records1.size() - 1, records2.size());
+    }
+
+    @Test
+    void testGetRecordById() {
+        HistoryContentTest record = new HistoryContentTest();
+        record.setId("1");
+        record.setActor("actor1");
+        record.setAction("action1");
+        record.setContent("content1");
+
+        dataProvider.saveRecord(record);
+
+        // Получаем запись по ID
+        HistoryContentTest retrievedRecord = dataProvider.getRecordById(1);
+        assertNotNull(retrievedRecord);
+        assertEquals(record, retrievedRecord);
+    }
+
+    @Test
+    void testGetAllRecords() {
+        HistoryContentTest record1 = new HistoryContentTest();
+        record1.setId("1");
+        record1.setActor("actor1");
+        record1.setAction("action1");
+        record1.setContent("content1");
+
+        HistoryContentTest record2 = new HistoryContentTest();
+        record2.setId("2");
+        record2.setActor("actor2");
+        record2.setAction("action2");
+        record2.setContent("content2");
+
+        dataProvider.saveRecord(record1);
+        dataProvider.saveRecord(record2);
+
+        // Проверяем, что все записи получены корректно
+        List<HistoryContentTest> records = dataProvider.getAllRecords();
+        assertEquals(2, records.size());
+        assertTrue(records.contains(record1));
+        assertTrue(records.contains(record2));
     }
 }

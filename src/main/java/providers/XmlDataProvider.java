@@ -1,92 +1,91 @@
 package providers;
 
-import converters.GenericConverter;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import exceptions.DataProviderException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
-import java.io.File;
+
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
+@Slf4j
 public class XmlDataProvider<T> implements IDataProvider<T> {
-    private final File xmlFile;
-    private final GenericConverter<T, String> converter;
-    private static final Logger log = LoggerFactory.getLogger(XmlDataProvider.class);
+    private Path filePath;
+    private final Class<T> type;
+    private final XmlMapper xmlMapper = new XmlMapper();;
 
-    public XmlDataProvider(String filePath, GenericConverter<T, String> converter) {
-        this.xmlFile = new File(filePath);
-        this.converter = converter;
+    public XmlDataProvider(Class<T> type) {
+        this.type = type;
+    }
+
+    @Override
+    public void initDataSource(String filePathOrDb) {
+        try {
+            this.filePath = Paths.get(filePathOrDb);
+            if (!Files.exists(this.filePath)) {
+                Files.createFile(this.filePath);
+                xmlMapper.writeValue(Files.newBufferedWriter(this.filePath), new ArrayList<T>());
+            }
+        } catch (Exception e) {
+            log.error("Ошибка при инициализации источника данных", e);
+            throw new DataProviderException("Не удалось инициализировать источник данных", e);
+        }
     }
 
     @Override
     public void saveRecord(T record) {
         try {
             List<T> records = getAllRecords();
+            records.removeIf(existing -> existing.equals(record)); // Удаляем старую версию, если есть
             records.add(record);
-            String xml = converter.serialize((T) records); // Преобразуем список в XML
-            Files.writeString(xmlFile.toPath(), xml);
-            log.info("Запись с ID {} успешно сохранена в XML", converter.getId(record));
+            xmlMapper.writeValue(Files.newBufferedWriter(filePath), records);
         } catch (Exception e) {
-            log.error("Ошибка при сохранении записи в XML: {}", e.getMessage(), e);
-            throw new DataProviderException("Ошибка при сохранении записи в XML", e);
+            log.error("Ошибка при сохранении записи: {}", record, e);
+            throw new DataProviderException("Не удалось сохранить запись", e);
         }
     }
 
     @Override
-    public T getRecordById(String id) {
+    public void deleteRecord(long id) {
         try {
-            T record = getAllRecords().stream()
-                    .filter(r -> id.equals(converter.getId(r)))
+            List<T> records = getAllRecords().stream()
+                    .filter(record -> !record.toString().contains(Long.toString(id)))
+                    .collect(Collectors.toList());
+            xmlMapper.writeValue(Files.newBufferedWriter(filePath), records);
+        } catch (Exception e) {
+            log.error("Ошибка при удалении записи с ID: {}", id, e);
+            throw new DataProviderException("Не удалось удалить запись", e);
+        }
+    }
+
+    @Override
+    public T getRecordById(long id) {
+        try {
+            return getAllRecords().stream()
+                    .filter(record -> record.toString().contains(Long.toString(id)))
                     .findFirst()
                     .orElse(null);
-            if (record != null) {
-                log.info("Запись с ID {} найдена в XML", id);
-            } else {
-                log.warn("Запись с ID {} не найдена в XML", id);
-            }
-            return record;
         } catch (Exception e) {
-            log.error("Ошибка при поиске записи с ID {}: {}", id, e.getMessage(), e);
-            throw new DataProviderException("Ошибка при поиске записи с ID: " + id, e);
+            log.error("Ошибка при получении записи с ID: {}", id, e);
+            throw new DataProviderException("Не удалось получить запись", e);
         }
     }
 
     @Override
     public List<T> getAllRecords() {
         try {
-            if (!xmlFile.exists()) {
-                log.warn("Файл XML {} не найден, возвращён пустой список", xmlFile.getAbsolutePath());
+            if (!Files.exists(filePath) || Files.size(filePath) == 0) {
                 return new ArrayList<>();
             }
-            String xmlContent = Files.readString(xmlFile.toPath());
-            List<T> records = (List<T>) converter.deserialize(xmlContent);
-            log.info("Получено {} записей из XML файла {}", records.size(), xmlFile.getAbsolutePath());
-            return records;
+            return xmlMapper.readValue(Files.newBufferedReader(filePath),
+                    xmlMapper.getTypeFactory().constructCollectionType(List.class, type));
         } catch (Exception e) {
-            log.error("Ошибка при чтении XML файла {}: {}", xmlFile.getAbsolutePath(), e.getMessage(), e);
-            throw new DataProviderException("Ошибка при чтении XML", e);
-        }
-    }
-
-    @Override
-    public void deleteRecord(T record) {
-        throw new UnsupportedOperationException("Удаление записей из XML не поддерживается");
-    }
-
-    @Override
-    public void initDataSource() {
-        try {
-            if (!xmlFile.exists()) {
-                xmlFile.createNewFile();
-                log.info("XML файл {} был создан", xmlFile.getAbsolutePath());
-            } else {
-                log.info("XML файл {} уже существует", xmlFile.getAbsolutePath());
-            }
-        } catch (Exception e) {
-            log.error("Ошибка при инициализации XML файла {}: {}", xmlFile.getAbsolutePath(), e.getMessage(), e);
-            throw new DataProviderException("Ошибка при инициализации XML файла", e);
+            log.error("Ошибка при чтении всех записей", e);
+            throw new DataProviderException("Не удалось прочитать все записи", e);
         }
     }
 }

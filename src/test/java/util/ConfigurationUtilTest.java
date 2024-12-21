@@ -1,5 +1,8 @@
+package util;
+
 import com.man.Constants;
-import man.TestGener;
+import lombok.extern.slf4j.Slf4j;
+
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -14,7 +17,8 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ConfigurationUtilTest extends TestGener {
+@Slf4j
+public class ConfigurationUtilTest {
 
 
     @ParameterizedTest

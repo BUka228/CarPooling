@@ -28,7 +28,7 @@ public abstract class GenericRepository<T> {
         }
     }
 
-    public T findById(String id) {
+    public T findById(long id) {
         try {
             return provider.getRecordById(id);
         } catch (Exception e) {
@@ -36,9 +36,9 @@ public abstract class GenericRepository<T> {
         }
     }
 
-    public void delete(T entity) {
+    public void delete(long id) {
         try {
-            provider.deleteRecord(entity);
+            provider.deleteRecord(id);
         } catch (Exception e) {
             throw new RepositoryException("Ошибка при удалении объекта", e);
         }

@@ -2,137 +2,102 @@ package providers;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import converters.GenericConverter;
 import model.HistoryContentTest;
 import org.bson.Document;
 import org.junit.jupiter.api.*;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.testcontainers.containers.MongoDBContainer;
+import utils.MongoDBUtil;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+public class MongoDataProviderTest {
 
-class MongoDataProviderTest {
-    private static MongoDBContainer mongoContainer;
+    private static final MongoDBUtil MongoDBUtil = new MongoDBUtil();
     private MongoDataProvider<HistoryContentTest> dataProvider;
     private MongoCollection<Document> collection;
 
-    @Mock
-    private GenericConverter<HistoryContentTest, Document> mockConverter;
-
-    @BeforeAll
-    static void startMongoContainer() {
-        mongoContainer = new MongoDBContainer("mongo:6.0");
-        mongoContainer.start();
-    }
-
-    @AfterAll
-    static void stopMongoContainer() {
-        mongoContainer.stop();
-    }
-
+    // Подключаемся к реальной базе данных перед каждым тестом
     @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
+    void setup() {
+        MongoDatabase database = MongoDBUtil.getDatabase("testdb");
+        collection = database.getCollection("historyContent");
+        dataProvider = new MongoDataProvider<>(collection, HistoryContentTest.class);
+    }
 
-        String connectionString = mongoContainer.getConnectionString();
-        var mongoClient = com.mongodb.client.MongoClients.create(connectionString);
-        MongoDatabase database = mongoClient.getDatabase("test");
-        collection = database.getCollection("history");
-
-        dataProvider = new MongoDataProvider<>(collection, mockConverter);
+    // Очищаем коллекцию после каждого теста
+    @AfterEach
+    void clearCollection() {
+        // Очищаем коллекцию, чтобы каждый тест был независимым
+        collection.deleteMany(new Document());
     }
 
     @Test
-    void testSaveRecord_Success() {
-        HistoryContentTest content = new HistoryContentTest("1", "user", "CREATE", "Sample Content");
-        Document mockDocument = new Document("_id", "1")
-                .append("actor", "user")
-                .append("action", "CREATE")
-                .append("content", "Sample Content");
+    void testSaveAndGetRecord() {
+        HistoryContentTest record = new HistoryContentTest("1", "Alice", "create", "Test content");
 
-        try {
-            when(mockConverter.serialize(content)).thenReturn(mockDocument);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        // Сохраняем запись
+        dataProvider.saveRecord(record);
 
-        assertDoesNotThrow(() -> dataProvider.saveRecord(content));
-        assertEquals(1, collection.countDocuments(), "Запись не была сохранена в MongoDB");
+        // Получаем запись по ID
+        HistoryContentTest fetched = dataProvider.getRecordById(1);
+
+        assertNotNull(fetched, "Запись не должна быть null");
+        assertEquals(record.getId(), fetched.getId(), "ID записи должен совпадать");
+        assertEquals(record.getActor(), fetched.getActor(), "Актер должен совпадать");
+        assertEquals(record.getAction(), fetched.getAction(), "Действие должно совпадать");
+        assertEquals(record.getContent(), fetched.getContent(), "Содержание должно совпадать");
     }
 
     @Test
-    void testDeleteRecord_Success() {
-        Document mockDocument = new Document("_id", "1")
-                .append("actor", "user")
-                .append("action", "CREATE")
-                .append("content", "Sample Content");
-        collection.insertOne(mockDocument);
+    void testDeleteRecord() {
+        HistoryContentTest record = new HistoryContentTest("1", "Alice", "create", "Test content");
 
-        HistoryContentTest content = new HistoryContentTest("1", "user", "CREATE", "Sample Content");
+        // Сохраняем запись
+        dataProvider.saveRecord(record);
 
-        when(mockConverter.getId(content)).thenReturn("1");
+        // Удаляем запись
+        dataProvider.deleteRecord(1);
 
-        assertDoesNotThrow(() -> dataProvider.deleteRecord(content));
-        assertEquals(0, collection.countDocuments(), "Запись не была удалена из MongoDB");
+        // Проверяем, что запись удалена
+        assertThrows(Exception.class, () -> dataProvider.getRecordById(1), "Запись должна быть удалена");
     }
 
     @Test
-    void testGetRecordById_Success() {
-        Document mockDocument = new Document("_id", "1")
-                .append("actor", "user")
-                .append("action", "CREATE")
-                .append("content", "Sample Content");
-        collection.insertOne(mockDocument);
+    void testUpdateRecord() {
+        HistoryContentTest record = new HistoryContentTest("1", "Alice", "create", "Test content");
 
-        HistoryContentTest expectedContent = new HistoryContentTest("1", "user", "CREATE", "Sample Content");
-        try {
-            when(mockConverter.deserialize(mockDocument)).thenReturn(expectedContent);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        // Сохраняем запись
+        dataProvider.saveRecord(record);
 
-        HistoryContentTest result = dataProvider.getRecordById("1");
+        // Обновляем запись
+        HistoryContentTest updatedRecord = new HistoryContentTest("1", "Alice", "update", "Updated content");
+        dataProvider.saveRecord(updatedRecord);
 
-        assertNotNull(result, "Результат не должен быть null");
-        assertEquals(expectedContent.getId(), result.getId(), "ID не совпадает");
-        assertEquals(expectedContent.getActor(), result.getActor(), "Actor не совпадает");
-        assertEquals(expectedContent.getAction(), result.getAction(), "Action не совпадает");
-        assertEquals(expectedContent.getContent(), result.getContent(), "Content не совпадает");
+        // Получаем все записи
+        List<HistoryContentTest> records = dataProvider.getAllRecords();
+
+        assertEquals(1, records.size(), "В коллекции должна быть только одна запись");
+        assertTrue(records.contains(updatedRecord), "Обновленная запись должна быть в коллекции");
+        assertFalse(records.contains(record), "Старая запись не должна быть в коллекции");
     }
 
     @Test
-    void testGetAllRecords_Success() {
-        Document mockDocument1 = new Document("_id", "1")
-                .append("actor", "user1")
-                .append("action", "CREATE")
-                .append("content", "Content1");
-        Document mockDocument2 = new Document("_id", "2")
-                .append("actor", "user2")
-                .append("action", "UPDATE")
-                .append("content", "Content2");
-        collection.insertOne(mockDocument1);
-        collection.insertOne(mockDocument2);
+    void testGetAllRecords() {
+        HistoryContentTest record1 = new HistoryContentTest("1", "Alice", "create", "Test content");
+        HistoryContentTest record2 = new HistoryContentTest("2", "Bob", "update", "Updated content");
 
-        HistoryContentTest content1 = new HistoryContentTest("1", "user1", "CREATE", "Content1");
-        HistoryContentTest content2 = new HistoryContentTest("2", "user2", "UPDATE", "Content2");
+        // Сохраняем записи
+        dataProvider.saveRecord(record1);
+        dataProvider.saveRecord(record2);
 
-        try {
-            when(mockConverter.deserialize(mockDocument1)).thenReturn(content1);
-            when(mockConverter.deserialize(mockDocument2)).thenReturn(content2);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        // Получаем все записи
+        List<HistoryContentTest> records = dataProvider.getAllRecords();
 
-
-        List<HistoryContentTest> results = dataProvider.getAllRecords();
-
-        assertNotNull(results, "Список записей не должен быть null");
-        assertEquals(2, results.size(), "Количество записей не совпадает");
-        assertTrue(results.contains(content1), "Список не содержит первую запись");
-        assertTrue(results.contains(content2), "Список не содержит вторую запись");
+        assertNotNull(records, "Список записей не должен быть null");
+        assertEquals(2, records.size(), "Количество записей должно быть равно 2");
+        assertTrue(records.contains(record1), "Запись 1 должна быть в коллекции");
+        assertTrue(records.contains(record2), "Запись 2 должна быть в коллекции");
     }
+
 }

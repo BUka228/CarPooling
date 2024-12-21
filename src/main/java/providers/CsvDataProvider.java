@@ -1,89 +1,108 @@
 package providers;
 
-import com.opencsv.CSVReader;
-import com.opencsv.CSVWriter;
-import converters.GenericConverter;
+import com.opencsv.bean.CsvToBean;
+import com.opencsv.bean.CsvToBeanBuilder;
+import com.opencsv.bean.StatefulBeanToCsv;
+import com.opencsv.bean.StatefulBeanToCsvBuilder;
 import exceptions.DataProviderException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
-public class CsvDataProvider<T> implements IDataProvider<T> {
-    private final String filePath;
-    private final GenericConverter<T, String[]> converter;
-    private static final Logger log = LoggerFactory.getLogger(CsvDataProvider.class);
+@Slf4j
+class CsvDataProvider<T> implements IDataProvider<T> {
+    private Path filePath;
+    private final Class<T> type;
 
-    public CsvDataProvider(String filePath, GenericConverter<T, String[]> converter) {
-        this.filePath = filePath;
-        this.converter = converter;
+    public CsvDataProvider(Class<T> type) {
+        this.type = type;
     }
 
     @Override
-    public void saveRecord(T record) {
-        try (CSVWriter writer = new CSVWriter(new FileWriter(filePath, true))) {
-            String[] recordData = converter.serialize(record);
-            writer.writeNext(recordData);
-            log.info("Запись с ID {} успешно сохранена в CSV", converter.getId(record));
+    public void initDataSource(String filePathOrDb) {
+        try {
+            this.filePath = Paths.get(filePathOrDb);
+            if (!Files.exists(this.filePath)) {
+                Files.createFile(this.filePath);
+            }
         } catch (Exception e) {
-            log.error("Ошибка при сохранении записи в CSV: {}", e.getMessage(), e);
-            throw new DataProviderException("Ошибка при сохранении записи в CSV", e);
+            log.error("Ошибка при инициализации источника данных", e);
+            throw new DataProviderException("Не удалось инициализировать источник данных", e);
         }
     }
 
     @Override
-    public void deleteRecord(T record) {
-        // Удаление записей из CSV не поддерживается
-        throw new UnsupportedOperationException("Удаление записей из CSV не поддерживается");
+    public void saveRecord(T record) {
+        try {
+            List<T> records = getAllRecords();
+            records.remove(record);
+            records.add(record);
+            writeRecords(records);
+        } catch (Exception e) {
+            log.error("Ошибка при сохранении записи: {}", record, e);
+            throw new DataProviderException("Не удалось сохранить запись", e);
+        }
     }
 
     @Override
-    public T getRecordById(String id) {
+    public void deleteRecord(long id) {
         try {
-            T record = getAllRecords().stream()
-                    .filter(r -> id.equals(converter.getId(r)))
-                    .findFirst()
-                    .orElseThrow(() -> new DataProviderException("Запись с ID " + id + " не найдена"));
-            log.info("Запись с ID {} найдена в CSV", id);
-            return record;
+            List<T> records = getAllRecords().stream()
+                    .filter(record -> !record.toString().contains(Long.toString(id)))
+                    .collect(Collectors.toList());
+            writeRecords(records);
         } catch (Exception e) {
-            log.error("Ошибка при поиске записи с ID {}: {}", id, e.getMessage(), e);
-            throw new DataProviderException("Ошибка при поиске записи с ID: " + id, e);
+            log.error("Ошибка при удалении записи с ID: {}", id, e);
+            throw new DataProviderException("Не удалось удалить запись", e);
+        }
+    }
+
+    @Override
+    public T getRecordById(long id) {
+        try {
+            return getAllRecords().stream()
+                    .filter(record -> record.toString().contains(Long.toString(id)))
+                    .findFirst()
+                    .orElse(null);
+        } catch (Exception e) {
+            log.error("Ошибка при получении записи с ID: {}", id, e);
+            throw new DataProviderException("Не удалось получить запись", e);
         }
     }
 
     @Override
     public List<T> getAllRecords() {
-        List<T> records = new ArrayList<>();
-        try (CSVReader reader = new CSVReader(new FileReader(filePath))) {
-            String[] line;
-            while ((line = reader.readNext()) != null) {
-                records.add(converter.deserialize(line));
+        try {
+            if (!Files.exists(filePath)) {
+                return new ArrayList<>();
             }
-            log.info("Получено {} записей из CSV", records.size());
+            try (BufferedReader reader = Files.newBufferedReader(filePath)) {
+                CsvToBean<T> csvToBean = new CsvToBeanBuilder<T>(reader)
+                        .withType(type)
+                        .withIgnoreLeadingWhiteSpace(true)
+                        .build();
+                return csvToBean.parse();
+            }
         } catch (Exception e) {
-            log.error("Ошибка при чтении записей из CSV: {}", e.getMessage(), e);
-            throw new DataProviderException("Ошибка при чтении записей из CSV", e);
+            log.error("Ошибка при чтении всех записей", e);
+            throw new DataProviderException("Не удалось прочитать все записи", e);
         }
-        return records;
     }
 
-    @Override
-    public void initDataSource() {
-        try {
-            java.io.File file = new java.io.File(filePath);
-            if (!file.exists()) {
-                file.createNewFile();
-                log.info("CSV файл {} был создан", filePath);
-            } else {
-                log.info("CSV файл {} уже существует", filePath);
-            }
+    private void writeRecords(List<T> records) {
+        try (BufferedWriter writer = Files.newBufferedWriter(filePath)) {
+            StatefulBeanToCsv<T> beanToCsv = new StatefulBeanToCsvBuilder<T>(writer).build();
+            beanToCsv.write(records);
         } catch (Exception e) {
-            log.error("Ошибка при инициализации CSV файла: {}", e.getMessage(), e);
-            throw new DataProviderException("Ошибка при инициализации CSV файла", e);
+            log.error("Ошибка при записи данных", e);
+            throw new DataProviderException("Не удалось записать данные", e);
         }
     }
 }
