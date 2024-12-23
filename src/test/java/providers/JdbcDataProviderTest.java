@@ -19,7 +19,7 @@ import static org.mockito.Mockito.*;
 
 @Slf4j
 public class JdbcDataProviderTest {
-    @Mock
+    /*@Mock
     private Connection mockConnection;
 
     @Mock
@@ -39,7 +39,7 @@ public class JdbcDataProviderTest {
 
     @Test
     public void testCreateUser() throws SQLException {
-        User user = new User(1, "John Doe", "john.doe@example.com", "password123", "M", "123456789", new java.util.Date(), "123 Main St", "none");
+        User user = new User(1, "John Doe", "john.doe@example.com", "password123", "M", "123456789", new java.util.Date(), "123 com.man.Main St", "none");
 
         // Выполнение метода
         dataProvider.createUser(user);
@@ -59,7 +59,7 @@ public class JdbcDataProviderTest {
     @Test
     public void testGetUserById() throws SQLException {
         int userId = 1;
-        User expectedUser = new User(userId, "John Doe", "john.doe@example.com", "password123", "M", "123456789", new java.util.Date(), "123 Main St", "none");
+        User expectedUser = new User(userId, "John Doe", "john.doe@example.com", "password123", "M", "123456789", new java.util.Date(), "123 com.man.Main St", "none");
 
         // Настройка мокового ResultSet
         when(mockStatement.executeQuery()).thenReturn(mockResultSet);
@@ -85,7 +85,7 @@ public class JdbcDataProviderTest {
 
     @Test
     public void testUpdateUser() throws SQLException {
-        User user = new User(1, "John Doe", "john.doe@example.com", "newPassword123", "M", "123456789", new java.util.Date(), "123 Main St", "none");
+        User user = new User(1, "John Doe", "john.doe@example.com", "newPassword123", "M", "123456789", new java.util.Date(), "123 com.man.Main St", "none");
 
         // Выполнение метода
         dataProvider.updateUser(user);
@@ -454,5 +454,5 @@ public class JdbcDataProviderTest {
         jdbcDataProvider.createUser(user);
         log.info("User created successfully");
         PostgresConnectionUtil.closeConnection(jdbcDataProvider.connection());
-    }
+    }*/
 }

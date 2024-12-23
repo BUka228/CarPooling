@@ -1,16 +1,17 @@
 package providers;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import model.HistoryContentTest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.nio.file.*;
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class CsvDataProviderTest {
 

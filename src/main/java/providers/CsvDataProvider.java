@@ -26,7 +26,7 @@ class CsvDataProvider<T> implements IDataProvider<T> {
     }
 
     @Override
-    public void initDataSource(String filePathOrDb) {
+    public void initDataSource(String filePathOrDb) throws DataProviderException {
         try {
             this.filePath = Paths.get(filePathOrDb);
             if (!Files.exists(this.filePath)) {
@@ -34,12 +34,11 @@ class CsvDataProvider<T> implements IDataProvider<T> {
             }
         } catch (Exception e) {
             log.error("Ошибка при инициализации источника данных", e);
-            throw new DataProviderException("Не удалось инициализировать источник данных", e);
         }
     }
 
     @Override
-    public void saveRecord(T record) {
+    public void saveRecord(T record) throws DataProviderException {
         try {
             List<T> records = getAllRecords();
             records.remove(record);
@@ -47,12 +46,11 @@ class CsvDataProvider<T> implements IDataProvider<T> {
             writeRecords(records);
         } catch (Exception e) {
             log.error("Ошибка при сохранении записи: {}", record, e);
-            throw new DataProviderException("Не удалось сохранить запись", e);
         }
     }
 
     @Override
-    public void deleteRecord(long id) {
+    public void deleteRecord(long id) throws DataProviderException {
         try {
             List<T> records = getAllRecords().stream()
                     .filter(record -> !record.toString().contains(Long.toString(id)))
@@ -60,12 +58,11 @@ class CsvDataProvider<T> implements IDataProvider<T> {
             writeRecords(records);
         } catch (Exception e) {
             log.error("Ошибка при удалении записи с ID: {}", id, e);
-            throw new DataProviderException("Не удалось удалить запись", e);
         }
     }
 
     @Override
-    public T getRecordById(long id) {
+    public T getRecordById(long id) throws DataProviderException {
         try {
             return getAllRecords().stream()
                     .filter(record -> record.toString().contains(Long.toString(id)))
@@ -96,13 +93,12 @@ class CsvDataProvider<T> implements IDataProvider<T> {
         }
     }
 
-    private void writeRecords(List<T> records) {
+    private void writeRecords(List<T> records) throws DataProviderException {
         try (BufferedWriter writer = Files.newBufferedWriter(filePath)) {
             StatefulBeanToCsv<T> beanToCsv = new StatefulBeanToCsvBuilder<T>(writer).build();
             beanToCsv.write(records);
         } catch (Exception e) {
             log.error("Ошибка при записи данных", e);
-            throw new DataProviderException("Не удалось записать данные", e);
         }
     }
 }

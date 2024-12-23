@@ -4,12 +4,14 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import model.HistoryContentTest;
 import org.bson.Document;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import utils.MongoDBUtil;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class MongoDataProviderTest {
 

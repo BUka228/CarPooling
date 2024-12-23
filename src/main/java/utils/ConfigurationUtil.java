@@ -1,5 +1,6 @@
 package utils;
 
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import utils.loders.ConfigLoader;
@@ -11,12 +12,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Properties;
 
-
+@Slf4j
 public class ConfigurationUtil {
 
     private static final String DEFAULT_CONFIG_PATH = "./src/main/resources/environment.properties";
     private static  Properties configuration = new Properties();
-    private static final Logger log = LoggerFactory.getLogger(ConfigurationUtil.class);
 
     public ConfigurationUtil() throws IOException {}
 
@@ -78,7 +78,7 @@ public class ConfigurationUtil {
         int dotIndex = fileName.lastIndexOf('.');
         String extension = (dotIndex == -1) ? "" : fileName.substring(dotIndex + 1);
         //Обнаруженное расширение файла
-        log.debug("Обнаруженное расширение файла: {}", extension);
+        //log.debug("Обнаруженное расширение файла: {}", extension);
         return extension;
     }
 

@@ -1,12 +1,9 @@
 package repositories;
 
 import com.mongodb.client.MongoCollection;
-
 import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.mockito.Mockito.mock;
 
 public class HistoryObjectsRepositoryTest {
     private static final Logger log = LoggerFactory.getLogger(HistoryObjectsRepositoryTest.class);

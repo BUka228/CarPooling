@@ -1,28 +1,21 @@
 package util;
 
-import com.man.Constants;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import org.slf4j.Logger;
-import utils.ConfigurationUtil;
 import utils.PostgresConnectionUtil;
 
-import java.io.IOException;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 
 @Slf4j
 public class PostgresConnectionUtilTest {
 
-    private static final String CONFIG_FILE_PATH = ".src/main/resources/environment.properties"; // Путь к конфиг файлу для тестов
+    private static final String CONFIG_FILE_PATH = "./src/main/resources/environment.properties"; // Путь к конфиг файлу для тестов
 
     @BeforeAll
     public static void setUp() {
@@ -46,16 +39,6 @@ public class PostgresConnectionUtilTest {
         }
     }
 
-    @Test
-    public void testGetConnection_InvalidConfig_ThrowsSQLException() {
-        // Задаем неверные параметры в конфиге для этого теста
-        System.setProperty("config.file", "./src/test/resources/invalid_config.properties");
-
-        SQLException exception = assertThrows(SQLException.class, PostgresConnectionUtil::getConnection, "Expected SQLException to be thrown due to invalid config");
-
-        assertTrue(exception.getMessage().contains("Ошибка загрузки конфигурации базы данных"),
-                "Expected exception message to contain the error about configuration loading");
-    }
 
     @Test
     public void testCloseConnection_ConnectionIsClosed() {

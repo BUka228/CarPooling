@@ -7,14 +7,9 @@ import com.mongodb.client.model.ReplaceOptions;
 import exceptions.DataProviderException;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import utils.MongoDBUtil;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 public class MongoDataProvider<T> implements IDataProvider<T> {
@@ -80,7 +75,6 @@ public class MongoDataProvider<T> implements IDataProvider<T> {
         try {
             List<T> records = new ArrayList<>();
             for (Document document : collection.find()) {
-                Object idValue = document.get("_id");
                 nameChangeId(document);
                 records.add(objectMapper.readValue(document.toJson(), type));
             }

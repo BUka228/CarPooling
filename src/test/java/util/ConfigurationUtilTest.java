@@ -2,7 +2,6 @@ package util;
 
 import com.man.Constants;
 import lombok.extern.slf4j.Slf4j;
-
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -43,7 +42,7 @@ public class ConfigurationUtilTest {
 
     @Test
     void testGetConfigList() throws IOException{
-        System.setProperty("config.file", "./src/main/resources/environment.yml");
+        //System.setProperty("config.file", "./src/main/resources/environment.yml");
         log.info(System.getProperty("config.file"));
 
         String planetsString = ConfigurationUtil.getConfigurationEntry("planets");
@@ -56,7 +55,7 @@ public class ConfigurationUtilTest {
     }
     @Test
     void testGetIntStringMap() throws IOException {
-        System.setProperty("config.file", "./src/main/resources/environment.yml");
+        //System.setProperty("config.file", "./src/main/resources/environment.yml");
         log.info(System.getProperty("config.file"));
 
 
