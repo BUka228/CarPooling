@@ -115,57 +115,7 @@
 
 ### Диаграмма классов
 
-@startuml
-class Пользователь {
-    +id : int
-    +имя : String
-    +email : String
-    +пароль : String
-    +пол : String
-    +телефон : String
-    +датаРождения : Date
-    +адрес : String
-    +предпочтения : String
-}
-
-class Поездка {
-    +id : int
-    +времяВыезда : Date
-    +максимумПассажиров: byte
-    +датаСоздания: Date
-    +статус: String
-    +редактируемый: Boolean
-}
-
-class Маршрут {
-    +id : int
-    +начальнаяТочка : String
-    +конечнаяТочка : String
-    +дата : Date
-    +оценочнаяПродолжительность: short
-}
-
-class Бронирование {
-    +id : int
-    +количествоМест : byte
-    +статус : String
-    +датаБронирования: Date
-    +номерПаспорта: String
-    +датаОкончанияСрокаПаспорта: Date
-}
-
-class Оценка {
-    +id : int
-    +рейтинг : int
-    +комментарий : String
-    +дата: Date
-}
-
-Пользователь --> "0..*" Поездка
-Поездка --> "1..*" Бронирование
-Поездка --> "1" Маршрут
-Поездка --> "0..*" Оценка
-@enduml
+![Диаграмма классов](//www.plantuml.com/plantuml/png/TLJ1RjD04BtxArOvKhM5gm-eGlm1Ns2e1PPSHuhD0I6as444gKWLdAk6yWMMoLB7sEONPl-8jxCcRDPnSeXtzisRcVSclaYpO96zlOgzLt6Gfe8srDDlzOKUy5jHgGgI-YpUUmAVa-XI-29ACdEYcbfrWyYBR14bhqqml0gYs8dH7r0j3VNu2c4dQCgIL1znsRaPM-whfE-u_8MJf8vgxkDva8K3gAGjAagLZ-hfCB9GLwrLOMKFi0-UBOQa1u0RAYSag9WECj0tTJsWIxiLQj5Bet8MQuNJ1ktdE9TelcPLAb-yV3V0zzFTuuB9J7yM8x8B3L8hbJkwyMXShz3SQiMzNTFE5y_cypWC4d5-BgXYxfRrwwZNX336oURE_fMtLBdLNghFcbqL4wfqmAofr7xpymtzq7ApZeuVZROOHgrTu8JjjhQ0Vc83-ttwXllUwgLYVOS5_Z-cBz8tyqLc3VILKxh3aKbEZDOmTOs2KXEobhVcMLW-djWkMQFO5hk5NQkDaZsCaa3mtl3QBdNsSSexeoUBpsHqp-JGSqp0PQ33Neax8-VqklEAxFHw0FLpf4kBB_9vy2Kmk-CUMgKdNpYdfq_5xF7PsQEPyp_q3ey6-8I1KquUJvavg-oYh0viORoBCBd46_Cl)
 
 ### Диаграмма вариантов использования
 
@@ -211,6 +161,7 @@ actor Система
 Соберите проект с помощью Maven:
 
 *mvn clean install*
+
 Запустите приложение:
 
 *java -jar target/carpooling-cli.jar*
