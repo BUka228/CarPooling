@@ -90,7 +90,7 @@
 
 #### Параметры: ####
 
-*-t, --type: Тип хранилища (XML, CSV, MONGO, POSTGRES).*
+- -t, --type: Тип хранилища (XML, CSV, MONGO, POSTGRES).
 
 ## Диаграммы: 
 
