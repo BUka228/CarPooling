@@ -115,44 +115,42 @@
 
 ### Диаграмма классов
 
+Диаграмма вариантов использования описывает основные функции приложения и взаимодействие пользователя с системой. Она включает следующие сценарии:
+
+- **Регистрация и авторизация пользователя:** Пользователь может зарегистрироваться и войти в систему.
+- **Создание поездки:** Пользователь может создать новую поездку, указав маршрут и другие параметры.
+- **Бронирование места:** Пользователь может забронировать место в поездке.
+- **Оценка поездки:** Пользователь может оставить оценку и комментарий после завершения поездки.
+- **Управление профилем:** Пользователь может редактировать свои данные.
+- **Управление поездкой:** Пользователь может редактировать или удалять созданные поездки.
 
 ![Диаграмма классов](https://www.plantuml.com/plantuml/png/TLJ1RjD04BtxArOvKhM5gm-eGlm1Ns2e1PPSHuhD0I6as444gKWLdAk6yWMMoLB7sEONPl-8jxCcRDPnSeXtzisRcVSclaYpO96zlOgzLt6Gfe8srDDlzOKUy5jHgGgI-YpUUmAVa-XI-29ACdEYcbfrWyYBR14bhqqml0gYs8dH7r0j3VNu2c4dQCgIL1znsRaPM-whfE-u_8MJf8vgxkDva8K3gAGjAagLZ-hfCB9GLwrLOMKFi0-UBOQa1u0RAYSag9WECj0tTJsWIxiLQj5Bet8MQuNJ1ktdE9TelcPLAb-yV3V0zzFTuuB9J7yM8x8B3L8hbJkwyMXShz3SQiMzNTFE5y_cypWC4d5-BgXYxfRrwwZNX336oURE_fMtLBdLNghFcbqL4wfqmAofr7xpymtzq7ApZeuVZROOHgrTu8JjjhQ0Vc83-ttwXllUwgLYVOS5_Z-cBz8tyqLc3VILKxh3aKbEZDOmTOs2KXEobhVcMLW-djWkMQFO5hk5NQkDaZsCaa3mtl3QBdNsSSexeoUBpsHqp-JGSqp0PQ33Neax8-VqklEAxFHw0FLpf4kBB_9vy2Kmk-CUMgKdNpYdfq_5xF7PsQEPyp_q3ey6-8I1KquUJvavg-oYh0viORoBCBd46_Cl)
 
 ### Диаграмма вариантов использования
 
-@startuml
-left to right direction
+Диаграмма классов описывает структуру основных сущностей приложения и их взаимосвязи. Она включает следующие классы:
 
-actor Пользователь
-actor Система
+- **Пользователь:** Содержит информацию о пользователе (имя, email, пароль, телефон и т.д.).
+- **Поездка:** Описывает поездку, включая время отправления, максимальное количество пассажиров и статус.
+- **Маршрут:** Описывает маршрут поездки (начальная и конечная точки, дата и продолжительность).
+- **Бронирование:** Содержит информацию о бронировании места в поездке (количество мест, статус, данные паспорта).
+- **Оценка:** Содержит оценку и комментарий к поездке.
 
-Пользователь --> (Поиск попутчика)
-Пользователь --> (Создание поездки)
-(Создание поездки) .left.> (Отправка и получение сообщений) : Include
+![Диаграмма вариантов использования](https://www.plantuml.com/plantuml/png/hLLDJi905Dxt5BEqY_O0XXWsBZm6WQea2AOEYGiNY3_4n8qNG8aNA6XZRSjmXJStydiKcmOBKmmbQTCtt_VrVU-z6UfNik7B_aN7wdYdKiYUyDjdvrAqshxNbErUrxAiHbFsV46lf2ZHp_I5vum2FQIGt_Fr2KNwTXbDAR3usaGHZdCa3dYLAHGBMf2YXRxJGpsYY68AR1DvGWehdnJG78mmamWv17faMqQ4SDcnorfZQ2_q0CWPVrjGb84JP3G29UCZKuNVL3-jGj-sE1GdtMQdt_ACPb-WhvY69w_dMQKKSjdOSYMKSFkNUTO80u6Cfx_4GauLzMgkosfmd530eVLAGV7uMdhTLjK4UOJsLzcABcuSPrkP5SpCSVyWLUJjINtEK8fN4n03y93pRUDiZFNZqdZyj_R6FSIPuDCfxaCz4Aizg12EA2ggAOgDQkzvivAyEHo2tZrUE9Z2plza2huKEcnLn0dNpJInapVXYbE_e-uRWgmSmqFULkCtS1dEBr5pdBKpqNmcbPFC0rfAt3fNvOJTfgbSeyeCRQIQ-rPAhUDmmd_O3m00)
 
-Пользователь --> (Бронирование места)
-(Бронирование места) .up.> (Отмена брони) : Include
-(Бронирование места) <.. (Оплата поездки) : Extend
-(Бронирование места) .right.> (Отправка и получение сообщений) : Include
-(Бронирование места) <|-- (Бронирование одного места)
-(Бронирование места) <|-- (Бронирование нескольких мест)
+### Диаграмма базы данных
 
-Пользователь --> (Оценка поездки)
-Пользователь --> (Просмотр истории поездок)
-Пользователь --> (Управление профилем)
+Диаграмма базы данных описывает структуру таблиц и их взаимосвязи в базе данных. Она включает следующие сущности:
 
-Пользователь --> (Управление поездкой)
-(Управление поездкой) ..> (Удаление поездки) : Include
-(Управление поездкой) ..> (Редактирование поездки) : Include
+- **Пользователь:** Таблица с данными о пользователях.
+- **Поездка:** Таблица с данными о поездках, связанная с пользователями и маршрутами.
+- **Маршрут:** Таблица с данными о маршрутах.
+- **Бронирование:** Таблица с данными о бронированиях, связанная с поездками и пользователями.
+- **Оценка:** Таблица с данными об оценках, связанная с поездками.
 
-(Поиск попутчика) <-- Система
-(Создание поездки) <-- Система
-(Бронирование места) <-- Система
-(Оценка поездки) <-- Система
-(Просмотр истории поездок) <-- Система
-(Управление профилем) <-- Система
-(Управление поездкой) <-- Система
-@enduml
+![Диаграмма базы данных](https://www.plantuml.com/plantuml/png/bLNHQjH057tFL-HT-WDIIX4Hn1V1BuWqQ62Rm7PyA4rXauWLAXHzBbth5uIOiTcuQN_XpXzvvawwZfDDP7SVDZFtddldd7CdUtWYWhduS3ppmbX4ujId9TtJR_M5xl1RKQboadhjdta-Fa-Y8_-f7yN2tzz__UhWm6nIGsjrXS0RCO_YTsOpF0wYcRD73wYuC1s68MmxcwOxIVKHmSv5r7oyahuZ-0ihIHqrV8xdWGXD4i8rEagL3VhfRQ3GLrset4BtQUUUBGhYTyXkgPoMekAoa8E-gSiULFvxf3KErQgCLIkmMe97XdK95WtBKm7mzfG1Dj5RXBZU5gAeaEiqLGoe6gBSDDSDLC4dlAGL4fyboImCOjk4eVil_r9zmLGVUQ3OPrrGvMwAfTwrdJUjNeVK2ofrJtw-eX_Q7fRTyQ_L8q4ImUb4evxZ0N8_iUFt6_oIbQ-r0En3Jvrpe2qFxCdxP2viQbyPr3tQPfmXEKsovHuDEajshSBwsZopxrEMEgIs7y2z0w00ioHIUDHuv1SQFbRrngZBLd0zkkNwKDSfuSZwO5yKPoHs6Z5Rv1lZrN_l7i_vIiyuad-Q14loDRuemvekaBCQORy38nnoz8MPfdjxoPdpxW1SPPjRB5NkEN636X-i7b-pcnZJqGgsQa013FRREfuZFqsTMye8TDgOfGh67eRn4Vuj_W00)
+
+
 
 ## Установка и запуск
 Убедитесь, что у вас установлена Java (версия 17 или выше).
