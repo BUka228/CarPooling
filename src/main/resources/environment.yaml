@@ -1,0 +1,20 @@
+﻿db:
+  url: jdbc:postgresql://192.168.56.1:5432/CarPooling
+  user: postgres
+  password: 11111111
+
+mongodb:
+  uri: mongodb://localhost:27017
+  db: myDatabase
+  collection: history
+
+working:
+  directory: /path/to/working/directory
+
+planets:
+  - Земля
+  - Сатурн
+  - Марс
+  - Венера
+
+months: 1:Январь,2:Февраль,3:Март,4:Апрель,5:Май,6:Июнь,7:Июль,8:Август,9:Сентябрь,10:Октябрь,11:Ноябрь,12:Декабрь

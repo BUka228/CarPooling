@@ -1,0 +1,25 @@
+@startuml
+!define RECTANGLE class
+
+' Определение узлов
+node "Клиент (CLI)" {
+    component "Консольный интерфейс\n(Command Line Interface)" as cli
+}
+
+node "Сервер" {
+    component "Серверное приложение\n(Backend)" as backend
+    component "База данных\n(СУБД)" as db
+    component "API сервисы" as api
+    component "Логирование" as logging
+}
+
+' Связи между компонентами
+cli --> backend : "Отправка запросов\n(по сети через HTTP/HTTPS)"
+backend --> db : "Запросы и обновления данных\n(по сети через SQL)"
+backend --> api : "Вызовы API сервисов\n(REST API, JSON)"
+backend --> logging : "Запись логов\n(по сети, файлы, или сервисы)"
+
+' Взаимодействие с базой данных
+db --> api : "API-сервисы для работы с данными\n(например, REST API)"
+
+@enduml

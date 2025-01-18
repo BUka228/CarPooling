@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.util.Properties;
 
 
-public abstract class ConfigLoader {  // Теперь абстрактный класс, а не интерфейс
+public abstract class ConfigLoader {
     protected final Logger log = LoggerFactory.getLogger(getClass());
     public abstract Properties load(File file) throws IOException;
     protected FileInputStream createFileInputStream(File file) throws IOException {

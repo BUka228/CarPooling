@@ -1,6 +1,6 @@
 package utils;
 
-import com.man.Constants;
+import com.man.constant.Constants;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;

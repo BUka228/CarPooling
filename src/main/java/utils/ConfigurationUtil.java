@@ -1,8 +1,7 @@
 package utils;
 
+
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import utils.loders.ConfigLoader;
 import utils.loders.PropertiesConfigLoader;
 import utils.loders.XmlConfigLoader;
@@ -12,10 +11,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Properties;
 
+import static com.man.constant.Constants.DEFAULT_CONFIG_PATH;
+
+
 @Slf4j
 public class ConfigurationUtil {
-
-    private static final String DEFAULT_CONFIG_PATH = "./src/main/resources/environment.properties";
     private static  Properties configuration = new Properties();
 
     public ConfigurationUtil() throws IOException {}
@@ -76,10 +76,7 @@ public class ConfigurationUtil {
     }
     private static String getFileExtension(String fileName) {
         int dotIndex = fileName.lastIndexOf('.');
-        String extension = (dotIndex == -1) ? "" : fileName.substring(dotIndex + 1);
-        //Обнаруженное расширение файла
-        //log.debug("Обнаруженное расширение файла: {}", extension);
-        return extension;
+        return (dotIndex == -1) ? "" : fileName.substring(dotIndex + 1);
     }
 
     public static void updateConfiguration() throws IllegalStateException {

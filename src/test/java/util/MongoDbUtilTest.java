@@ -1,17 +1,24 @@
 package util;
 
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
 import lombok.extern.slf4j.Slf4j;
+import org.bson.Document;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.when;
 
 
 @Slf4j
 public class MongoDbUtilTest {
 
-    private static final String CONNECTION_STRING = "mongodb://localhost:27017";
+
     private static final String DB_NAME = "testDb";
     private static final String COLLECTION_NAME = "testCollection";
-
-    /*@Test
+    @Test
     public void testGetDatabase() {
 
         MongoDatabase mockDatabase;
@@ -49,5 +56,5 @@ public class MongoDbUtilTest {
         } catch (Exception e) {
             log.error(e.getMessage());
         }
-    }*/
+    }
 }

@@ -2,9 +2,12 @@
 <!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
 <properties>
     <comment>Configuration properties example</comment>
-    <entry key="db.url">jdbc:postgresql://localhost:5432/mydatabase</entry>
-    <entry key="db.user">admin</entry>
-    <entry key="db.password">password</entry>
+    <entry key="db.url">jdbc:postgresql://192.168.56.1:5432/CarPooling</entry>
+    <entry key="db.user">postgres</entry>
+    <entry key="db.password">11111111</entry>
+    <entry key="mongodb.uri">mongodb://localhost:27017</entry>
+    <entry key="mongodb.db">myDatabase</entry>
+    <entry key="mongodb.collection">history</entry>
     <entry key="working.directory">/path/to/working/directory</entry>
     <entry key="planets">Земля,Сатурн,Марс,Венера</entry>
     <entry key="months">1:Январь,2:Февраль,3:Март,4:Апрель,5:Май,6:Июнь,7:Июль,8:Август,9:Сентябрь,10:Октябрь,11:Ноябрь,12:Декабрь</entry>
