@@ -1,12 +1,12 @@
-import business.service.TripServiceImpl;
-import business.service.UserServiceImpl;
-import data.model.database.Route;
-import data.model.database.Trip;
-import data.model.database.User;
-import exceptions.service.TripServiceException;
-import exceptions.service.UserServiceException;
+import com.carpooling.cli.context.CliContext;
+import com.carpooling.entities.database.Route;
+import com.carpooling.entities.database.Trip;
+import com.carpooling.entities.database.User;
+import com.carpooling.exceptions.service.TripServiceException;
+import com.carpooling.exceptions.service.UserServiceException;
+import com.carpooling.services.impl.TripServiceImpl;
+import com.carpooling.services.impl.UserServiceImpl;
 import org.junit.jupiter.api.Test;
-import presentation.context.CliContext;
 
 import java.nio.charset.Charset;
 import java.sql.Date;

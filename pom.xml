@@ -156,7 +156,7 @@
                             </descriptorRefs>
                             <archive>
                                 <manifest>
-                                    <mainClass>com.man.Main</mainClass>
+                                    <mainClass>com.carpooling.Main</mainClass>
                                 </manifest>
                             </archive>
                         </configuration>

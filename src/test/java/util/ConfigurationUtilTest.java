@@ -1,12 +1,11 @@
 package util;
 
-import com.man.constant.Constants;
+import com.carpooling.constants.Constants;
+import com.carpooling.utils.ConfigurationUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import utils.ConfigurationUtil;
 
 import java.io.IOException;
 import java.util.Arrays;

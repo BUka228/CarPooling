@@ -1,10 +1,10 @@
 package util;
 
+import com.carpooling.utils.PostgresConnectionUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import utils.PostgresConnectionUtil;
 
 import java.sql.Connection;
 import java.sql.SQLException;
