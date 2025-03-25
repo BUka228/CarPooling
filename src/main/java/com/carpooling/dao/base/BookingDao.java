@@ -1,6 +1,6 @@
 package com.carpooling.dao.base;
 
-import com.carpooling.entities.record.BookingRecord;
+import com.carpooling.entities.database.Booking;
 import com.carpooling.exceptions.dao.DataAccessException;
 
 import java.util.Optional;
@@ -12,11 +12,11 @@ public interface BookingDao {
     /**
      * Создает новое бронирование.
      *
-     * @param bookingRecord Бронирование для создания.
+     * @param booking Бронирование для создания.
      * @return ID созданного бронирования.
      * @throws DataAccessException Если произошла ошибка при создании бронирования.
      */
-    String createBooking(BookingRecord bookingRecord) throws DataAccessException;
+    String createBooking(Booking booking) throws DataAccessException;
 
     /**
      * Возвращает бронирование по ID.
@@ -25,15 +25,15 @@ public interface BookingDao {
      * @return Бронирование, если найдено.
      * @throws DataAccessException Если бронирование не найдено.
      */
-    Optional<BookingRecord> getBookingById(String id) throws DataAccessException;
+    Optional<Booking> getBookingById(String id) throws DataAccessException;
 
     /**
      * Обновляет бронирование.
      *
-     * @param bookingRecord Бронирование для обновления.
+     * @param booking Бронирование для обновления.
      * @throws DataAccessException Если произошла ошибка при обновлении бронирования.
      */
-    void updateBooking(BookingRecord bookingRecord) throws DataAccessException;
+    void updateBooking(Booking booking) throws DataAccessException;
 
     /**
      * Удаляет бронирование.

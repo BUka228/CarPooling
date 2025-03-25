@@ -1,84 +1,74 @@
 package com.carpooling.dao.mongo;
 
 import com.carpooling.dao.base.BookingDao;
-import com.carpooling.entities.record.BookingRecord;
+import com.carpooling.entities.database.Booking;
 import com.carpooling.exceptions.dao.DataAccessException;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.result.DeleteResult;
+import com.mongodb.client.result.UpdateResult;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 
 import java.util.Optional;
 
-import static com.carpooling.constants.Constants.*;
-import static com.carpooling.constants.ErrorMessages.BOOKING_CREATION_ERROR;
-import static com.carpooling.constants.ErrorMessages.BOOKING_UPDATE_ERROR;
-import static com.carpooling.constants.ErrorMessages.*;
-import static com.carpooling.constants.LogMessages.*;
 
 @Slf4j
-public class MongoBookingDao extends AbstractMongoDao<BookingRecord> implements BookingDao {
-    
+public class MongoBookingDao extends AbstractMongoDao<Booking> implements BookingDao {
 
     public MongoBookingDao(MongoCollection<Document> collection) {
-        super(collection, BookingRecord.class);
+        super(collection, Booking.class);
     }
 
     @Override
-    public String createBooking(BookingRecord bookingRecord) throws DataAccessException {
+    public String createBooking(Booking booking) throws DataAccessException {
         try {
-            // Преобразуем объект Booking в документ для MongoDB
-            Document document = toDocument(bookingRecord);
-            document.put(TRIP_ID, new ObjectId(bookingRecord.getTripId()));
-            document.put(USER_ID, new ObjectId(bookingRecord.getUserId()));
-
-            // Вставляем документ в коллекцию
+            Document document = toDocument(booking);
             collection.insertOne(document);
-
-            // Получаем сгенерированный ObjectId и возвращаем его как строку
-            ObjectId generatedId = document.getObjectId(MONGO_ID);
+            ObjectId generatedId = document.getObjectId("_id");
             String id = generatedId.toHexString();
-
-            log.info(CREATE_BOOKING_SUCCESS, id);
+            log.info("Booking created successfully: {}", id);
             return id;
         } catch (Exception e) {
-            log.error(ERROR_CREATE_BOOKING, bookingRecord, e);
-            throw new DataAccessException(BOOKING_CREATION_ERROR, e);
+            log.error("Error creating booking: {}", e.getMessage());
+            throw new DataAccessException("Error creating booking", e);
         }
     }
 
     @Override
-    public Optional<BookingRecord> getBookingById(String id) throws DataAccessException {
+    public Optional<Booking> getBookingById(String id) throws DataAccessException {
         try {
             ObjectId objectId = new ObjectId(id);
-            Document result = collection.find(Filters.eq(MONGO_ID, objectId)).first();
+            Document result = collection.find(Filters.eq("_id", objectId)).first();
             if (result != null) {
-                BookingRecord bookingRecord = fromDocument(result);
-                log.info(GET_BOOKING_START, id);
-                return Optional.of(bookingRecord);
+                Booking booking = fromDocument(result);
+                log.info("Booking found: {}", id);
+                return Optional.of(booking);
             } else {
-                log.warn(WARN_BOOKING_NOT_FOUND, id);
+                log.warn("Booking not found: {}", id);
                 return Optional.empty();
             }
         } catch (Exception e) {
-            log.error(ERROR_GET_BOOKING, id, e);
-            throw new DataAccessException(BOOKING_NOT_FOUND_ERROR, e);
+            log.error("Error reading booking: {}", e.getMessage());
+            throw new DataAccessException("Error reading booking", e);
         }
     }
 
     @Override
-    public void updateBooking(BookingRecord bookingRecord) throws DataAccessException {
+    public void updateBooking(Booking booking) throws DataAccessException {
         try {
-            ObjectId objectId = new ObjectId(bookingRecord.getId());
-            Document update = toDocument(bookingRecord);
-            update.put(MONGO_ID, objectId);
-
-            collection.updateOne(Filters.eq(MONGO_ID, objectId), new Document("$set", update));
-            log.info(UPDATE_BOOKING_SUCCESS, bookingRecord.getId());
+            ObjectId objectId = new ObjectId(booking.getId().toString());
+            Document update = toDocument(booking);
+            UpdateResult result = collection.updateOne(Filters.eq("_id", objectId), new Document("$set", update));
+            if (result.getModifiedCount() == 0) {
+                log.warn("Booking not found for update: {}", booking.getId());
+                throw new DataAccessException("Booking not found");
+            }
+            log.info("Booking updated successfully: {}", booking.getId());
         } catch (Exception e) {
-            log.error(ERROR_UPDATE_BOOKING, bookingRecord.getId(), e);
-            throw new DataAccessException(BOOKING_UPDATE_ERROR, e);
+            log.error("Error updating booking: {}", e.getMessage());
+            throw new DataAccessException("Error updating booking", e);
         }
     }
 
@@ -86,11 +76,15 @@ public class MongoBookingDao extends AbstractMongoDao<BookingRecord> implements 
     public void deleteBooking(String id) throws DataAccessException {
         try {
             ObjectId objectId = new ObjectId(id);
-            collection.deleteOne(Filters.eq(MONGO_ID, objectId));
-            log.info(DELETE_BOOKING_SUCCESS, id);
+            DeleteResult result = collection.deleteOne(Filters.eq("_id", objectId));
+            if (result.getDeletedCount() > 0) {
+                log.info("Booking deleted successfully: {}", id);
+            } else {
+                log.warn("Booking not found for deletion: {}", id);
+            }
         } catch (Exception e) {
-            log.error(ERROR_DELETE_BOOKING, id, e);
-            throw new DataAccessException(BOOKING_DELETE_ERROR, e);
+            log.error("Error deleting booking: {}", e.getMessage());
+            throw new DataAccessException("Error deleting booking", e);
         }
     }
 }

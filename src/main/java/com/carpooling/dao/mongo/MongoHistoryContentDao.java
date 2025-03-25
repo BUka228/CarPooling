@@ -11,9 +11,6 @@ import org.bson.types.ObjectId;
 
 import java.util.Optional;
 
-import static com.carpooling.constants.Constants.MONGO_ID;
-import static com.carpooling.constants.ErrorMessages.*;
-import static com.carpooling.constants.LogMessages.*;
 
 @Slf4j
 public class MongoHistoryContentDao extends AbstractMongoDao<HistoryContent> implements HistoryContentDao {
@@ -30,14 +27,14 @@ public class MongoHistoryContentDao extends AbstractMongoDao<HistoryContent> imp
             collection.insertOne(document);
 
             // Получаем сгенерированный ObjectId и возвращаем его как строку
-            ObjectId generatedId = document.getObjectId(MONGO_ID);
+            ObjectId generatedId = document.getObjectId("_id");
             String id = generatedId.toHexString();
 
-            log.info(CREATE_HISTORY_SUCCESS, id);
+            log.info("History created successfully with id: {}", id);
             return id;
         } catch (Exception e) {
-            log.error(ERROR_CREATE_HISTORY, historyContent, e);
-            throw new DataAccessException(HISTORY_CREATION_ERROR, e);
+            log.error("Error creating history: {}", historyContent, e);
+            throw new DataAccessException("Error creating history", e);
         }
     }
 
@@ -45,20 +42,19 @@ public class MongoHistoryContentDao extends AbstractMongoDao<HistoryContent> imp
     public Optional<HistoryContent> getHistoryById(String id) throws DataAccessException {
         try {
             ObjectId objectId = new ObjectId(id);
-            Document result = collection.find(Filters.eq(MONGO_ID, objectId)).first();
+            Document result = collection.find(Filters.eq("_id", objectId)).first();
 
             if (result != null) {
-                // Преобразуем документ обратно в объект HistoryContent
                 HistoryContent historyContent = fromDocument(result);
-                log.info(GET_HISTORY_SUCCESS, id);
+                log.info("History retrieved successfully with id: {}", id);
                 return Optional.of(historyContent);
             } else {
-                log.warn(WARN_HISTORY_NOT_FOUND, id);
+                log.warn("History not found with id: {}", id);
                 return Optional.empty();
             }
         } catch (Exception e) {
-            log.error(ERROR_GET_HISTORY, id, e);
-            throw new DataAccessException(HISTORY_NOT_FOUND_ERROR, e);
+            log.error("Error getting history with id: {}", id, e);
+            throw new DataAccessException("History not found", e);
         }
     }
 
@@ -67,13 +63,13 @@ public class MongoHistoryContentDao extends AbstractMongoDao<HistoryContent> imp
         try {
             ObjectId objectId = new ObjectId(historyContent.getId());
             Document update = toDocument(historyContent);
-            update.put(MONGO_ID, objectId);
+            update.put("_id", objectId);
 
-            collection.updateOne(Filters.eq(MONGO_ID, objectId), new Document("$set", update));
-            log.info(UPDATE_HISTORY_SUCCESS, historyContent.getId());
+            collection.updateOne(Filters.eq("_id", objectId), new Document("$set", update));
+            log.info("History updated successfully with id: {}", historyContent.getId());
         } catch (Exception e) {
-            log.error(ERROR_UPDATE_HISTORY, historyContent.getId(), e);
-            throw new DataAccessException(HISTORY_UPDATE_ERROR, e);
+            log.error("Error updating history with id: {}", historyContent.getId(), e);
+            throw new DataAccessException("Error updating history", e);
         }
     }
 
@@ -81,12 +77,11 @@ public class MongoHistoryContentDao extends AbstractMongoDao<HistoryContent> imp
     public void deleteHistory(String id) throws DataAccessException {
         try {
             ObjectId objectId = new ObjectId(id);
-            collection.deleteOne(Filters.eq(MONGO_ID, objectId));
-            log.info(DELETE_HISTORY_SUCCESS, id);
+            collection.deleteOne(Filters.eq("_id", objectId));
+            log.info("History deleted successfully with id: {}", id);
         } catch (Exception e) {
-            log.error(ERROR_DELETE_HISTORY, id, e);
-            throw new DataAccessException(HISTORY_DELETE_ERROR, e);
+            log.error("Error deleting history with id: {}", id, e);
+            throw new DataAccessException("Error deleting history", e);
         }
     }
 }
-

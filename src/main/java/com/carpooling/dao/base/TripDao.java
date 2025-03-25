@@ -1,6 +1,6 @@
 package com.carpooling.dao.base;
 
-import com.carpooling.entities.record.TripRecord;
+import com.carpooling.entities.database.Trip;
 import com.carpooling.exceptions.dao.DataAccessException;
 
 import java.util.Optional;
@@ -13,11 +13,11 @@ public interface TripDao {
     /**
      * Создает новую поездку.
      *
-     * @param tripRecord  Информация о поездке.
+     * @param trip  Информация о поездке.
      * @return ID созданной поездки.
      * @throws DataAccessException Если произошла ошибка при создании поездки.
      */
-    String createTrip(TripRecord tripRecord) throws DataAccessException;
+    String createTrip(Trip trip) throws DataAccessException;
 
     /**
      * Возвращает поездку по её ID.
@@ -26,15 +26,15 @@ public interface TripDao {
      * @return Поездка, если найдена, Optional.empty() иначе.
      * @throws DataAccessException Если поездка не найдена.
      */
-    Optional<TripRecord> getTripById(String id) throws DataAccessException;
+    Optional<Trip> getTripById(String id) throws DataAccessException;
 
     /**
      * Обновляет информацию о поездке.
      *
-     * @param tripRecord    Информация о поездке.
+     * @param trip    Информация о поездке.
      * @throws DataAccessException Если произошла ошибка при обновлении поездки.
      */
-    void updateTrip(TripRecord tripRecord) throws DataAccessException;
+    void updateTrip(Trip trip) throws DataAccessException;
 
     /**
      * Удаляет поездку по её ID.

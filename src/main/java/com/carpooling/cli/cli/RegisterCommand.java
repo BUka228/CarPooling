@@ -1,10 +1,11 @@
 package com.carpooling.cli.cli;
 
 import com.carpooling.cli.context.CliContext;
-import com.carpooling.entities.database.User;
 import com.carpooling.exceptions.service.UserServiceException;
+import com.carpooling.factories.DaoFactory;
 import com.carpooling.services.base.UserService;
 import com.carpooling.services.impl.UserServiceImpl;
+import lombok.Setter;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
@@ -12,13 +13,8 @@ import java.sql.Date;
 
 
 @Command(name = "register", description = "Регистрация нового пользователя")
+@Setter
 public class RegisterCommand implements Runnable {
-
-    private final UserService userService; // Внедряем UserService через конструктор
-
-    public RegisterCommand() { this.userService = new UserServiceImpl(); }
-
-    public RegisterCommand(UserService userService) { this.userService = userService; }
 
     @Option(names = {"-n", "--name"}, description = "Имя пользователя", required = true)
     private String name;
@@ -46,6 +42,8 @@ public class RegisterCommand implements Runnable {
 
     @Override
     public void run() {
+        /*UserService userService = new UserServiceImpl(DaoFactory.getUserDao(CliContext.getCurrentStorageType()));
+
         User user = new User(
                 "",
                 name,
@@ -64,6 +62,6 @@ public class RegisterCommand implements Runnable {
             System.out.println("Пользователь зарегистрирован с ID: " + userId);
         } catch (UserServiceException e) {
             System.err.println("Ошибка при регистрации пользователя: " + e.getMessage());
-        }
+        }*/
     }
 }

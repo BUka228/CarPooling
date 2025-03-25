@@ -12,9 +12,9 @@ public final class LogMessages {
     public static final String ERROR_UPDATE_HISTORY = "Ошибка при обновлении записи истории с ID: {}";
     public static final String DELETE_HISTORY_SUCCESS = "Запись в истории успешно удалена с ID: {}";
     public static final String ERROR_DELETE_HISTORY = "Ошибка при удалении записи истории с ID: {}";
-    public static final String INIT_DAO_START = "Начало инициализации DAO для типа хранилища: {}";
-    public static final String INIT_DAO_SUCCESS = "DAO успешно инициализирован для типа хранилища: {}";
-    public static final String INIT_DAO_ERROR = "Ошибка при инициализации DAO для типа хранилища: {}";
+    public static final String INIT_DAO_START = "Начало инициализации {} DAO для типа хранилища: {}";
+    public static final String INIT_DAO_SUCCESS = "{} DAO успешно инициализирован для типа хранилища: {}";
+    public static final String INIT_DAO_ERROR = "Ошибка при инициализации {} DAO для типа хранилища: {}";
 
     // Сообщения, связанные с пользователями
     public static final String CREATE_USER_START = "Создание нового пользователя: name={}.";

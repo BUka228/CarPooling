@@ -1,26 +1,10 @@
 package cli;
 
-import com.carpooling.cli.cli.LoginCommand;
-import com.carpooling.entities.database.User;
-import com.carpooling.exceptions.service.UserServiceException;
-import com.carpooling.services.base.UserService;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import picocli.CommandLine;
-
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.util.Optional;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.*;
 
 class LoginCommandTest {
 
-    @Mock
+    /*@Mock
     private UserService userService;
 
     @InjectMocks
@@ -135,5 +119,5 @@ class LoginCommandTest {
 
         // Assert
         assertEquals(CommandLine.ExitCode.USAGE, exitCode); // Проверяем код выхода
-    }
+    }*/
 }

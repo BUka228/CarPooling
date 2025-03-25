@@ -16,13 +16,11 @@ public interface TripService {
     /**
      * Создание новой поездки.
      *
-     * @param trip    Поездка для создания.
-     * @param route   Маршрут для создания.
-     * @param userId  ID пользователя, создающего поездку.
+     * @param trip   Поездка для создания.
      * @return ID созданной поездки.
      * @throws TripServiceException Если произошла ошибка при создании.
      */
-    String createTrip(Trip trip, Route route, String userId) throws TripServiceException;
+    String createTrip(Trip trip) throws TripServiceException;
 
     /**
      * Получение поездки по ID.
@@ -44,12 +42,10 @@ public interface TripService {
     /**
      * Обновление данных поездки.
      *
-     * @param trip    Поездка с обновленными данными.
-     * @param route   Маршрут с обновленными данными.
-     * @param userId  ID пользователя.
+     * @param trip   Поездка с обновленными данными.
      * @throws TripServiceException Если произошла ошибка при обновлении.
      */
-    void updateTrip(Trip trip, Route route, String userId) throws TripServiceException;
+    void updateTrip(Trip trip) throws TripServiceException;
 
     /**
      * Удаление поездки по ID.

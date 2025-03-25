@@ -1,7 +1,7 @@
 package com.carpooling.dao.xml;
 
 import com.carpooling.dao.base.UserDao;
-import com.carpooling.entities.record.UserRecord;
+import com.carpooling.entities.database.User;
 import com.carpooling.exceptions.dao.DataAccessException;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
@@ -14,103 +14,98 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.util.List;
 import java.util.Optional;
-
-import static com.carpooling.constants.ErrorMessages.USER_UPDATE_ERROR;
-import static com.carpooling.constants.ErrorMessages.*;
-import static com.carpooling.constants.LogMessages.*;
-
+import java.util.UUID;
 
 @Slf4j
-public class XmlUserDao extends AbstractXmlDao<UserRecord, XmlUserDao.UserWrapper> implements UserDao {
+public class XmlUserDao extends AbstractXmlDao<User, XmlUserDao.UserWrapper> implements UserDao {
 
     public XmlUserDao(String filePath) {
-        super(UserRecord.class, UserWrapper.class, filePath);
+        super(User.class, UserWrapper.class, filePath);
     }
 
     @Override
-    public String createUser(@NotNull UserRecord userRecord) throws DataAccessException {
-        log.info(CREATE_USER_START, userRecord.getName());
-
-        // Генерация UUID для ID
-        String userId = generateId();
-        userRecord.setId(userId);
+    public String createUser(@NotNull User user) throws DataAccessException {
+        UUID userId = generateId();
+        user.setId(userId);
 
         try {
-            List<UserRecord> users = readAll();
-            users.add(userRecord);
+            List<User> users = readAll();
+            users.add(user);
             writeAll(users);
-
-            log.info(CREATE_USER_SUCCESS, userId);
-            return userId;
+            log.info("User created successfully: {}", userId);
+            return userId.toString();
         } catch (JAXBException e) {
-            log.error(ERROR_CREATE_USER, userRecord.getName(), e);
-            throw new DataAccessException(USER_CREATION_ERROR, e);
+            log.error("Error creating user: {}", e.getMessage());
+            throw new DataAccessException("Error creating user", e);
         }
     }
 
     @Override
-    public Optional<UserRecord> getUserById(String id) throws DataAccessException {
-        log.info(GET_USER_START, id);
+    public Optional<User> getUserById(String id) throws DataAccessException {
         try {
-            return findById(record -> record.getId().equals(id));
-        } catch (JAXBException e) {
-            log.error(ERROR_GET_USER, id, e);
-            throw new DataAccessException(String.format(USER_NOT_FOUND_ERROR, id), e);
-        }
-    }
-
-    @Override
-    public void updateUser(@NotNull UserRecord userRecord) throws DataAccessException {
-        try {
-            List<UserRecord> users = readAll();
-            boolean updated = updateItem(users, record -> record.getId().equals(userRecord.getId()), userRecord);
-
-            if (!updated) {
-                log.warn(WARN_USER_NOT_FOUND, userRecord.getId());
-                throw new DataAccessException(String.format(USER_NOT_FOUND_ERROR, userRecord.getId()));
+            Optional<User> user = findById(record -> record.getId().toString().equals(id));
+            if (user.isPresent()) {
+                log.info("User found: {}", id);
+            } else {
+                log.warn("User not found: {}", id);
             }
-
-            writeAll(users);
-            log.info(UPDATE_USER_SUCCESS, userRecord.getId());
+            return user;
         } catch (JAXBException e) {
-            log.error(ERROR_UPDATE_USER, userRecord.getId(), e);
-            throw new DataAccessException(USER_UPDATE_ERROR, e);
+            log.error("Error reading user: {}", e.getMessage());
+            throw new DataAccessException("Error reading user", e);
+        }
+    }
+
+    @Override
+    public void updateUser(@NotNull User user) throws DataAccessException {
+        try {
+            List<User> users = readAll();
+            boolean updated = updateItem(record -> record.getId().equals(user.getId()), user);
+            if (!updated) {
+                log.warn("User not found for update: {}", user.getId());
+                throw new DataAccessException("User not found");
+            }
+            log.info("User updated successfully: {}", user.getId());
+        } catch (JAXBException e) {
+            log.error("Error updating user: {}", e.getMessage());
+            throw new DataAccessException("Error updating user", e);
         }
     }
 
     @Override
     public void deleteUser(String id) throws DataAccessException {
         try {
-            deleteById(record -> record.getId().equals(id));
-            log.info(DELETE_USER_SUCCESS, id);
+            boolean removed = deleteById(record -> record.getId().toString().equals(id));
+            if (removed) {
+                log.info("User deleted successfully: {}", id);
+            } else {
+                log.warn("User not found for deletion: {}", id);
+            }
         } catch (JAXBException e) {
-            log.error(ERROR_DELETE_USER, id, e);
-            throw new DataAccessException(USER_DELETE_ERROR, e);
+            log.error("Error deleting user: {}", e.getMessage());
+            throw new DataAccessException("Error deleting user", e);
         }
     }
 
     @Override
-    protected List<UserRecord> getItemsFromWrapper(@NotNull UserWrapper wrapper) {
+    protected List<User> getItemsFromWrapper(@NotNull UserWrapper wrapper) {
         return wrapper.getUsers();
     }
 
     @Override
-    protected UserWrapper createWrapper(List<UserRecord> items) {
+    protected UserWrapper createWrapper(List<User> items) {
         return new UserWrapper(items);
     }
 
-    /**
-     * Вспомогательный класс для обертки списка пользователей в XML.
-     */
     @Setter
     @AllArgsConstructor
     @NoArgsConstructor
     @XmlRootElement(name = "users")
     protected static class UserWrapper {
-        private List<UserRecord> users;
+        private List<User> users;
 
         @XmlElement(name = "user")
-        public List<UserRecord> getUsers() {
+        public List<User> getUsers() {
             return users;
         }
     }

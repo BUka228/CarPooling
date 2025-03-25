@@ -1,7 +1,8 @@
 package com.carpooling.dao.xml;
 
+
 import com.carpooling.dao.base.TripDao;
-import com.carpooling.entities.record.TripRecord;
+import com.carpooling.entities.database.Trip;
 import com.carpooling.exceptions.dao.DataAccessException;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
@@ -14,102 +15,98 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
-import static com.carpooling.constants.ErrorMessages.TRIP_CREATION_ERROR;
-import static com.carpooling.constants.ErrorMessages.TRIP_UPDATE_ERROR;
-import static com.carpooling.constants.ErrorMessages.*;
-import static com.carpooling.constants.LogMessages.*;
 
 @Slf4j
-public class XmlTripDao extends AbstractXmlDao<TripRecord, XmlTripDao.TripWrapper> implements TripDao {
+public class XmlTripDao extends AbstractXmlDao<Trip, XmlTripDao.TripWrapper> implements TripDao {
 
     public XmlTripDao(String filePath) {
-        super(TripRecord.class, TripWrapper.class, filePath);
+        super(Trip.class, TripWrapper.class, filePath);
     }
 
     @Override
-    public String createTrip(@NotNull TripRecord tripRecord) throws DataAccessException {
-        log.info(CREATE_TRIP_START, tripRecord.getUserId(), tripRecord.getRouteId());
-
-        // Генерация UUID для ID
-        String tripId = generateId();
-        tripRecord.setId(tripId);
+    public String createTrip(@NotNull Trip trip) throws DataAccessException {
+        UUID tripId = generateId();
+        trip.setId(tripId);
 
         try {
-            List<TripRecord> trips = readAll();
-            trips.add(tripRecord);
+            List<Trip> trips = readAll();
+            trips.add(trip);
             writeAll(trips);
-
-            log.info(CREATE_TRIP_SUCCESS, tripId);
-            return tripId;
+            log.info("Trip created successfully: {}", tripId);
+            return tripId.toString();
         } catch (JAXBException e) {
-            log.error(ERROR_CREATE_TRIP, tripRecord.getUserId(), tripRecord.getRouteId(), e);
-            throw new DataAccessException(TRIP_CREATION_ERROR, e);
+            log.error("Error creating trip: {}", e.getMessage());
+            throw new DataAccessException("Error creating trip", e);
         }
     }
 
     @Override
-    public Optional<TripRecord> getTripById(String id) throws DataAccessException {
-        log.info(GET_TRIP_START, id);
+    public Optional<Trip> getTripById(String id) throws DataAccessException {
         try {
-            return findById(record -> record.getId().equals(id));
-        } catch (JAXBException e) {
-            log.error(ERROR_GET_TRIP, id, e);
-            throw new DataAccessException(String.format(TRIP_NOT_FOUND_ERROR, id), e);
-        }
-    }
-
-    @Override
-    public void updateTrip(@NotNull TripRecord tripRecord) throws DataAccessException {
-        try {
-            List<TripRecord> trips = readAll();
-            boolean updated = updateItem(trips, record -> record.getId().equals(tripRecord.getId()), tripRecord);
-
-            if (!updated) {
-                log.warn(WARN_TRIP_NOT_FOUND, tripRecord.getId());
-                throw new DataAccessException(String.format(TRIP_NOT_FOUND_ERROR, tripRecord.getId()));
+            Optional<Trip> trip = findById(record -> record.getId().toString().equals(id));
+            if (trip.isPresent()) {
+                log.info("Trip found: {}", id);
+            } else {
+                log.warn("Trip not found: {}", id);
             }
-
-            writeAll(trips);
-            log.info(UPDATE_TRIP_SUCCESS, tripRecord.getId());
+            return trip;
         } catch (JAXBException e) {
-            log.error(ERROR_UPDATE_TRIP, tripRecord.getId(), e);
-            throw new DataAccessException(TRIP_UPDATE_ERROR, e);
+            log.error("Error reading trip: {}", e.getMessage());
+            throw new DataAccessException("Error reading trip", e);
+        }
+    }
+
+    @Override
+    public void updateTrip(@NotNull Trip trip) throws DataAccessException {
+        try {
+            boolean updated = updateItem(record -> record.getId().equals(trip.getId()), trip);
+            if (!updated) {
+                log.warn("Trip not found for update: {}", trip.getId());
+                throw new DataAccessException("Trip not found");
+            }
+            log.info("Trip updated successfully: {}", trip.getId());
+        } catch (JAXBException e) {
+            log.error("Error updating trip: {}", e.getMessage());
+            throw new DataAccessException("Error updating trip", e);
         }
     }
 
     @Override
     public void deleteTrip(String id) throws DataAccessException {
         try {
-            deleteById(record -> record.getId().equals(id));
-            log.info(DELETE_TRIP_SUCCESS, id);
+            boolean removed = deleteById(record -> record.getId().toString().equals(id));
+            if (removed) {
+                log.info("Trip deleted successfully: {}", id);
+            } else {
+                log.warn("Trip not found for deletion: {}", id);
+            }
         } catch (JAXBException e) {
-            log.error(ERROR_DELETE_TRIP, id, e);
-            throw new DataAccessException(TRIP_DELETE_ERROR, e);
+            log.error("Error deleting trip: {}", e.getMessage());
+            throw new DataAccessException("Error deleting trip", e);
         }
     }
 
     @Override
-    protected List<TripRecord> getItemsFromWrapper(@NotNull TripWrapper wrapper) {
+    protected List<Trip> getItemsFromWrapper(@NotNull TripWrapper wrapper) {
         return wrapper.getTrips();
     }
 
     @Override
-    protected TripWrapper createWrapper(List<TripRecord> items) {
+    protected TripWrapper createWrapper(List<Trip> items) {
         return new TripWrapper(items);
     }
 
-    /**
-     * Вспомогательный класс для обертки списка поездок в XML.
-     */
     @Setter
     @AllArgsConstructor
     @NoArgsConstructor
     @XmlRootElement(name = "trips")
     protected static class TripWrapper {
-        private List<TripRecord> trips;
+        private List<Trip> trips;
+
         @XmlElement(name = "trip")
-        public List<TripRecord> getTrips() {
+        public List<Trip> getTrips() {
             return trips;
         }
     }

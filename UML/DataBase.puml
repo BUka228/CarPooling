@@ -1,29 +1,29 @@
 @startuml
 entity Пользователь {
-    +id : int <<PK>>
+    +id : UUID <<PK>>
     +имя : String
     +email : String
     +пароль : String
     +пол : String
     +телефон : String
     +датаРождения : Date
-    +адрес : String
+    +адрес : Address
     +предпочтения : String
 }
 
 entity Поездка {
-    +id : int <<PK>>
+    +id : UUID <<PK>>
     +времяВыезда : Date
     +максимумПассажиров : byte
     +датаСоздания : Date
     +статус : String
     +редактируемый : Boolean
-    +пользовательId : int <<FK>>
-    +маршрутId : int <<FK>>
+    +пользовательId : String <<FK>>
+    +маршрутId : UUID <<FK>>
 }
 
 entity Маршрут {
-    +id : int <<PK>>
+    +id : UUID <<PK>>
     +начальнаяТочка : String
     +конечнаяТочка : String
     +дата : Date
@@ -31,22 +31,22 @@ entity Маршрут {
 }
 
 entity Бронирование {
-    +id : int <<PK>>
+    +id : UUID <<PK>>
     +количествоМест : byte
     +статус : String
     +датаБронирования : Date
     +номерПаспорта : String
     +датаОкончанияСрокаПаспорта : Date
-    +поездкаId : int <<FK>>
-    +пользовательId : int <<FK>>
+    +поездкаId : UUID <<FK>>
+    +пользовательId : UUID <<FK>>
 }
 
 entity Оценка {
-    +id : int <<PK>>
+    +id : UUID <<PK>>
     +рейтинг : int
     +комментарий : String
     +дата : Date
-    +поездкаId : int <<FK>>
+    +поездкаId : UUID <<FK>>
 }
 
 Пользователь ||--o{ Поездка : создает

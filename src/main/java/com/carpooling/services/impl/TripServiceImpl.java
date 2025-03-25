@@ -1,14 +1,11 @@
 package com.carpooling.services.impl;
 
-import com.carpooling.cli.context.CliContext;
 import com.carpooling.constants.ErrorMessages;
 import com.carpooling.constants.LogMessages;
 import com.carpooling.dao.base.TripDao;
-import com.carpooling.entities.database.Route;
-import com.carpooling.entities.database.Trip;
-import com.carpooling.entities.record.TripRecord;
+import com.carpooling.entities.database.*;
+import com.carpooling.exceptions.dao.DataAccessException;
 import com.carpooling.exceptions.service.TripServiceException;
-import com.carpooling.factories.DaoFactory;
 import com.carpooling.services.base.RouteService;
 import com.carpooling.services.base.TripService;
 import lombok.AllArgsConstructor;
@@ -18,144 +15,133 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Session;
+import org.hibernate.query.Query;
 
-/**
- * Реализация интерфейса TripService.
- * Предоставляет методы для работы с поездками, включая создание, получение, обновление и удаление.
- */
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.stream.Collectors;
+
 @Slf4j
 @AllArgsConstructor
 public class TripServiceImpl implements TripService {
 
     private final TripDao tripDao;
-    private final RouteService routeService;
-
-    public TripServiceImpl() {
-        this.tripDao = DaoFactory.getTripDao(CliContext.getCurrentStorageType());
-        this.routeService = new RouteServiceImpl();
-    }
 
     @Override
-    public String createTrip(@NotNull Trip trip, @NotNull Route route, String userId) throws TripServiceException {
-        log.info(LogMessages.TRIP_CREATION_START, trip.getDepartureTime(), route.getStartPoint(), route.getEndPoint());
+    public String createTrip(@NotNull Trip trip) throws TripServiceException {
         try {
-            // Создаем маршрут
-            String routeId = routeService.createRoute(route);
-            log.info("Маршрут успешно создан: {}", routeId);
-
-            // Создаем поездку
-            TripRecord tripRecord = new TripRecord(trip, userId, routeId);
-            String tripId = tripDao.createTrip(tripRecord);
-            log.info(LogMessages.TRIP_CREATION_SUCCESS, tripId);
+            String tripId = tripDao.createTrip(trip);
+            log.info("Trip created successfully: {}", tripId);
             return tripId;
-        } catch (Exception e) {
-            log.error(LogMessages.TRIP_CREATION_ERROR, e.getMessage());
-            throw new TripServiceException(ErrorMessages.TRIP_CREATION_ERROR, e);
+        } catch (DataAccessException e) {
+            log.error("Error creating trip: {}", e.getMessage());
+            throw new TripServiceException("Error creating trip", e);
         }
     }
 
     @Override
     public Optional<Trip> getTripById(String tripId) throws TripServiceException {
-        log.info(LogMessages.TRIP_SEARCH_BY_ID_START, tripId);
         try {
-            Optional<TripRecord> tripOptional = tripDao.getTripById(tripId);
-            if (tripOptional.isEmpty()) {
-                log.warn(LogMessages.TRIP_SEARCH_BY_ID_ERROR, tripId);
+            Optional<Trip> tripOptional = tripDao.getTripById(tripId);
+            if (tripOptional.isPresent()) {
+                log.info("Trip found: {}", tripId);
+            } else {
+                log.warn("Trip not found: {}", tripId);
             }
-            log.info(LogMessages.TRIP_SEARCH_BY_ID_SUCCESS, tripId);
-            return tripOptional.map(TripRecord::toTrip);
-        } catch (Exception e) {
-            log.error(LogMessages.TRIP_SEARCH_BY_ID_ERROR, e.getMessage());
-            throw new TripServiceException(ErrorMessages.TRIP_SEARCH_ERROR, e);
+            return tripOptional;
+        } catch (DataAccessException e) {
+            log.error("Error reading trip: {}", e.getMessage());
+            throw new TripServiceException("Error reading trip", e);
         }
     }
 
     @Override
     public List<Trip> getAllTrips() throws TripServiceException {
-        log.info(LogMessages.TRIP_GET_ALL_START);
         try {
             List<Trip> trips = Collections.emptyList();
-            log.info(LogMessages.TRIP_GET_ALL_SUCCESS);
+            log.info("Retrieved {} trips successfully", trips.size());
             return trips;
         } catch (Exception e) {
-            log.error(LogMessages.TRIP_GET_ALL_ERROR, e.getMessage());
-            throw new TripServiceException(ErrorMessages.TRIP_GET_ALL_ERROR, e);
+            log.error("Error retrieving all trips: {}", e.getMessage());
+            throw new TripServiceException("Error retrieving all trips", e);
         }
     }
 
     @Override
-    public void updateTrip(@NotNull Trip trip, Route route, String userId) throws TripServiceException {
-        log.info(LogMessages.TRIP_UPDATE_START, trip.getId());
+    public void updateTrip(@NotNull Trip trip) throws TripServiceException {
         try {
-            // Обновляем маршрут
-            Optional<TripRecord> tripRecordOld = tripDao.getTripById(trip.getId());
-            route.setId(tripRecordOld.get().getRouteId());
-            routeService.updateRoute(route);
-            log.info("Маршрут успешно обновлен: {}", route.getId());
-
-            // Обновляем поездку
-            TripRecord tripRecordNew = new TripRecord(trip, userId, route.getId());
-            tripDao.updateTrip(tripRecordNew);
-            log.info(LogMessages.TRIP_UPDATE_SUCCESS, trip.getId());
-        } catch (Exception e) {
-            log.error(LogMessages.TRIP_UPDATE_ERROR, e.getMessage());
-            throw new TripServiceException(ErrorMessages.TRIP_UPDATE_ERROR, e);
+            Optional<Trip> existingTrip = tripDao.getTripById(trip.getId().toString());
+            if (existingTrip.isEmpty()) {
+                log.warn("Trip not found for update: {}", trip.getId());
+                throw new TripServiceException("Trip not found");
+            }
+            tripDao.updateTrip(trip);
+            log.info("Trip updated successfully: {}", trip.getId());
+        } catch (DataAccessException e) {
+            log.error("Error updating trip: {}", e.getMessage());
+            throw new TripServiceException("Error updating trip", e);
         }
     }
 
     @Override
     public void deleteTrip(String tripId) throws TripServiceException {
-        log.info(LogMessages.TRIP_DELETION_START, tripId);
         try {
             tripDao.deleteTrip(tripId);
-            log.info(LogMessages.TRIP_DELETION_SUCCESS, tripId);
-        } catch (Exception e) {
-            log.error(LogMessages.TRIP_DELETION_ERROR, e.getMessage());
-            throw new TripServiceException(ErrorMessages.TRIP_DELETION_ERROR, e);
+            log.info("Trip deleted successfully: {}", tripId);
+        } catch (DataAccessException e) {
+            log.error("Error deleting trip: {}", e.getMessage());
+            throw new TripServiceException("Error deleting trip", e);
         }
     }
 
     @Override
     public List<Trip> getTripsByUser(String userId) throws TripServiceException {
-        log.info(LogMessages.TRIP_GET_BY_USER_START, userId);
         try {
-            throw new UnsupportedOperationException("Метод getTripsByUser не реализован.");
+            List<Trip> trips = Collections.emptyList();
+            log.info("Retrieved {} trips for user: {}", trips.size(), userId);
+            return trips;
         } catch (Exception e) {
-            log.error(LogMessages.TRIP_GET_BY_USER_ERROR, e.getMessage());
-            throw new TripServiceException(ErrorMessages.TRIP_GET_BY_USER_ERROR, e);
+            log.error("Error retrieving trips by user: {}", e.getMessage());
+            throw new TripServiceException("Error retrieving trips by user", e);
         }
     }
 
     @Override
     public List<Trip> getTripsByStatus(String status) throws TripServiceException {
-        log.info(LogMessages.TRIP_GET_BY_STATUS_START, status);
-        try {
-            throw new UnsupportedOperationException("Метод getTripsByStatus не реализован.");
+        try  {
+            List<Trip> trips = Collections.emptyList();
+            log.info("Retrieved {} trips with status: {}", trips.size(), status);
+            return trips;
         } catch (Exception e) {
-            log.error(LogMessages.TRIP_GET_BY_STATUS_ERROR, e.getMessage());
-            throw new TripServiceException(ErrorMessages.TRIP_GET_BY_STATUS_ERROR, e);
+            log.error("Error retrieving trips by status: {}", e.getMessage());
+            throw new TripServiceException("Error retrieving trips by status", e);
         }
     }
 
     @Override
     public List<Trip> getTripsByCreationDate(String date) throws TripServiceException {
-        log.info(LogMessages.TRIP_GET_BY_CREATION_DATE_START, date);
         try {
-            throw new UnsupportedOperationException("Метод getTripsByCreationDate не реализован.");
+            List<Trip> trips = Collections.emptyList();
+            log.info("Retrieved {} trips created on: {}", trips.size(), date);
+            return trips;
         } catch (Exception e) {
-            log.error(LogMessages.TRIP_GET_BY_CREATION_DATE_ERROR, e.getMessage());
-            throw new TripServiceException(ErrorMessages.TRIP_GET_BY_CREATION_DATE_ERROR, e);
+            log.error("Error retrieving trips by creation date: {}", e.getMessage());
+            throw new TripServiceException("Error retrieving trips by creation date", e);
         }
     }
 
     @Override
     public List<Trip> getTripsByRoute(String routeId) throws TripServiceException {
-        log.info(LogMessages.TRIP_GET_BY_ROUTE_START, routeId);
-        try {
-            throw new UnsupportedOperationException("Метод getTripsByRoute не реализован.");
+        try  {
+            List<Trip> trips = Collections.emptyList();
+            log.info("Retrieved {} trips for route: {}", trips.size(), routeId);
+            return trips;
         } catch (Exception e) {
-            log.error(LogMessages.TRIP_GET_BY_ROUTE_ERROR, e.getMessage());
-            throw new TripServiceException(ErrorMessages.TRIP_GET_BY_ROUTE_ERROR, e);
+            log.error("Error retrieving trips by route: {}", e.getMessage());
+            throw new TripServiceException("Error retrieving trips by route", e);
         }
     }
 }

@@ -1,8 +1,11 @@
 package com.carpooling.services.base;
 
+import com.carpooling.entities.database.Booking;
+import com.carpooling.entities.database.Trip;
 import com.carpooling.entities.database.User;
 import com.carpooling.exceptions.service.UserServiceException;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -72,20 +75,4 @@ public interface UserService {
      * @throws UserServiceException Если произошла ошибка при изменении пароля.
      */
     void changePassword(String userId, String newPassword) throws UserServiceException;
-
-    /**
-     * Блокировка пользователя.
-     *
-     * @param userId ID пользователя.
-     * @throws UserServiceException Если произошла ошибка при блокировке.
-     */
-    void blockUser(String userId) throws UserServiceException;
-
-    /**
-     * Разблокировка пользователя.
-     *
-     * @param userId ID пользователя.
-     * @throws UserServiceException Если произошла ошибка при разблокировке.
-     */
-    void unblockUser(String userId) throws UserServiceException;
 }

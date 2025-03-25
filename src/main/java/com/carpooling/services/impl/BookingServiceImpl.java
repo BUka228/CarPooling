@@ -1,13 +1,10 @@
 package com.carpooling.services.impl;
 
-import com.carpooling.cli.context.CliContext;
-import com.carpooling.constants.ErrorMessages;
-import com.carpooling.constants.LogMessages;
+
 import com.carpooling.dao.base.BookingDao;
 import com.carpooling.entities.database.Booking;
-import com.carpooling.entities.record.BookingRecord;
+import com.carpooling.exceptions.dao.DataAccessException;
 import com.carpooling.exceptions.service.BookingServiceException;
-import com.carpooling.factories.DaoFactory;
 import com.carpooling.services.base.BookingService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,129 +14,116 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Реализация интерфейса BookingService.
- * Предоставляет методы для работы с бронированиями, включая создание, получение, обновление и удаление.
- */
+
 @Slf4j
 @AllArgsConstructor
 public class BookingServiceImpl implements BookingService {
-    
+
     private final BookingDao bookingDao;
 
-    public BookingServiceImpl() {
-        this.bookingDao = DaoFactory.getBookingDao(CliContext.getCurrentStorageType());
-    }
-
     @Override
-    public String createBooking(@NotNull Booking booking, String tripId, String userId) throws BookingServiceException {
-        log.info(LogMessages.BOOKING_CREATION_START, tripId, userId);
+    public String createBooking(@NotNull Booking booking) throws BookingServiceException {
         try {
-            BookingRecord bookingRecord = new BookingRecord(booking, tripId, userId);
-            String bookingId = bookingDao.createBooking(bookingRecord);
-            log.info(LogMessages.BOOKING_CREATION_SUCCESS, bookingId);
+            String bookingId = bookingDao.createBooking(booking);
+            log.info("Booking created successfully: {}", bookingId);
             return bookingId;
-        } catch (Exception e) {
-            log.error(LogMessages.BOOKING_CREATION_ERROR, e.getMessage());
-            throw new BookingServiceException(ErrorMessages.BOOKING_CREATION_ERROR, e);
+        } catch (DataAccessException e) {
+            log.error("Error creating booking: {}", e.getMessage());
+            throw new BookingServiceException("Error creating booking", e);
         }
     }
 
     @Override
     public Optional<Booking> getBookingById(String bookingId) throws BookingServiceException {
-        log.info(LogMessages.BOOKING_SEARCH_BY_ID_START, bookingId);
         try {
-            Optional<BookingRecord> bookingOptional = bookingDao.getBookingById(bookingId);
-            if (bookingOptional.isEmpty()) {
-                log.warn(LogMessages.BOOKING_SEARCH_BY_ID_ERROR, bookingId);
+            Optional<Booking> bookingOptional = bookingDao.getBookingById(bookingId);
+            if (bookingOptional.isPresent()) {
+                log.info("Booking found: {}", bookingId);
+            } else {
+                log.warn("Booking not found: {}", bookingId);
             }
-            log.info(LogMessages.BOOKING_SEARCH_BY_ID_SUCCESS, bookingId);
-            return bookingOptional.map(BookingRecord::toBooking);
-        } catch (Exception e) {
-            log.error(LogMessages.BOOKING_SEARCH_BY_ID_ERROR, e.getMessage());
-            throw new BookingServiceException(ErrorMessages.BOOKING_SEARCH_ERROR, e);
+            return bookingOptional;
+        } catch (DataAccessException e) {
+            log.error("Error reading booking: {}", e.getMessage());
+            throw new BookingServiceException("Error reading booking", e);
         }
     }
 
     @Override
     public List<Booking> getAllBookings() throws BookingServiceException {
-        log.info(LogMessages.BOOKING_GET_ALL_START);
         try {
-            List<Booking> bookings = Collections.emptyList();
-            log.info(LogMessages.BOOKING_GET_ALL_SUCCESS);
-            return bookings;
+            // Заглушка, так как метод не реализован в DAO
+            log.warn("Method getAllBookings is not implemented");
+            return Collections.emptyList();
         } catch (Exception e) {
-            log.error(LogMessages.BOOKING_GET_ALL_ERROR, e.getMessage());
-            throw new BookingServiceException(ErrorMessages.BOOKING_GET_ALL_ERROR, e);
+            log.error("Error retrieving all bookings: {}", e.getMessage());
+            throw new BookingServiceException("Error retrieving all bookings", e);
         }
     }
 
     @Override
-    public void updateBooking(@NotNull Booking booking, String tripId, String userId) throws BookingServiceException {
-        log.info(LogMessages.BOOKING_UPDATE_START, booking.getId());
+    public void updateBooking(@NotNull Booking booking) throws BookingServiceException {
         try {
-            BookingRecord bookingRecord = new BookingRecord(booking, tripId, userId);
-            bookingDao.updateBooking(bookingRecord);
-            log.info(LogMessages.BOOKING_UPDATE_SUCCESS, booking.getId());
-        } catch (Exception e) {
-            log.error(LogMessages.BOOKING_UPDATE_ERROR, e.getMessage());
-            throw new BookingServiceException(ErrorMessages.BOOKING_UPDATE_ERROR, e);
+            bookingDao.updateBooking(booking);
+            log.info("Booking updated successfully: {}", booking.getId());
+        } catch (DataAccessException e) {
+            log.error("Error updating booking: {}", e.getMessage());
+            throw new BookingServiceException("Error updating booking", e);
         }
     }
 
     @Override
     public void deleteBooking(String bookingId) throws BookingServiceException {
-        log.info(LogMessages.BOOKING_DELETION_START, bookingId);
         try {
             bookingDao.deleteBooking(bookingId);
-            log.info(LogMessages.BOOKING_DELETION_SUCCESS, bookingId);
-        } catch (Exception e) {
-            log.error(LogMessages.BOOKING_DELETION_ERROR, e.getMessage());
-            throw new BookingServiceException(ErrorMessages.BOOKING_DELETION_ERROR, e);
+            log.info("Booking deleted successfully: {}", bookingId);
+        } catch (DataAccessException e) {
+            log.error("Error deleting booking: {}", e.getMessage());
+            throw new BookingServiceException("Error deleting booking", e);
         }
     }
 
     @Override
     public List<Booking> getBookingsByTrip(String tripId) throws BookingServiceException {
-        log.info(LogMessages.BOOKING_GET_BY_TRIP_START, tripId);
         try {
-            throw new UnsupportedOperationException("Метод getBookingsByTrip не реализован.");
+            log.warn("Method getBookingsByTrip is not implemented for trip: {}", tripId);
+            throw new UnsupportedOperationException("Method getBookingsByTrip is not implemented");
         } catch (Exception e) {
-            log.error(LogMessages.BOOKING_GET_BY_TRIP_ERROR, e.getMessage());
-            throw new BookingServiceException(ErrorMessages.BOOKING_GET_BY_TRIP_ERROR, e);
+            log.error("Error retrieving bookings by trip: {}", e.getMessage());
+            throw new BookingServiceException("Error retrieving bookings by trip", e);
         }
     }
 
     @Override
     public List<Booking> getBookingsByUser(String userId) throws BookingServiceException {
-        log.info(LogMessages.BOOKING_GET_BY_USER_START, userId);
         try {
-            throw new UnsupportedOperationException("Метод getBookingsByUser не реализован.");
+            log.warn("Method getBookingsByUser is not implemented for user: {}", userId);
+            throw new UnsupportedOperationException("Method getBookingsByUser is not implemented");
         } catch (Exception e) {
-            log.error(LogMessages.BOOKING_GET_BY_USER_ERROR, e.getMessage());
-            throw new BookingServiceException(ErrorMessages.BOOKING_GET_BY_USER_ERROR, e);
+            log.error("Error retrieving bookings by user: {}", e.getMessage());
+            throw new BookingServiceException("Error retrieving bookings by user", e);
         }
     }
 
     @Override
     public List<Booking> getBookingsByStatus(String status) throws BookingServiceException {
-        log.info(LogMessages.BOOKING_GET_BY_STATUS_START, status);
         try {
-            throw new UnsupportedOperationException("Метод getBookingsByStatus не реализован.");
+            log.warn("Method getBookingsByStatus is not implemented for status: {}", status);
+            throw new UnsupportedOperationException("Method getBookingsByStatus is not implemented");
         } catch (Exception e) {
-            log.error(LogMessages.BOOKING_GET_BY_STATUS_ERROR, e.getMessage());
-            throw new BookingServiceException(ErrorMessages.BOOKING_GET_BY_STATUS_ERROR, e);
+            log.error("Error retrieving bookings by status: {}", e.getMessage());
+            throw new BookingServiceException("Error retrieving bookings by status", e);
         }
     }
 
     @Override
     public void cancelBooking(String bookingId) throws BookingServiceException {
-        log.info(LogMessages.BOOKING_CANCEL_START, bookingId);
         try {
-            throw new UnsupportedOperationException("Метод cancelBooking не реализован.");
+            log.warn("Method cancelBooking is not implemented for booking: {}", bookingId);
+            throw new UnsupportedOperationException("Method cancelBooking is not implemented");
         } catch (Exception e) {
-            log.error(LogMessages.BOOKING_CANCEL_ERROR, e.getMessage());
-            throw new BookingServiceException(ErrorMessages.BOOKING_CANCEL_ERROR, e);
+            log.error("Error cancelling booking: {}", e.getMessage());
+            throw new BookingServiceException("Error cancelling booking", e);
         }
     }
 }

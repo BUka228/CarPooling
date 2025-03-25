@@ -1,14 +1,14 @@
 package dao.csv;
 
 import com.carpooling.dao.csv.CsvTripDao;
-import com.carpooling.entities.record.TripRecord;
+import com.carpooling.entities.database.Trip;
 import com.carpooling.exceptions.dao.DataAccessException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Date;
 import java.util.Optional;
@@ -18,196 +18,145 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class CsvTripDaoTest {
 
-    @TempDir
-    Path tempDir; // Временная директория для тестов
-
     private CsvTripDao tripDao;
+    @TempDir
+    Path tempDir;
+
     private File tempFile;
 
     @BeforeEach
-    void setUp() {
-        // Создаем временный файл для тестов
-        tempFile = tempDir.resolve("test-trips.csv").toFile();
+    void setUp() throws IOException {
+        String testFileName = "test-trips.csv";
+        Path filePath = tempDir.resolve(testFileName);
+        Files.createFile(filePath);
+        tempFile = filePath.toFile();
         tripDao = new CsvTripDao(tempFile.getAbsolutePath());
     }
 
+    private Trip createTestTrip() {
+        Trip trip = new Trip();
+        // Устанавливаем только поля, аннотированные @CsvBindByName
+        trip.setDepartureTime(new Date(System.currentTimeMillis() + 1000L * 3600 * 24)); // +1 day
+        trip.setMaxPassengers((byte) 4);
+        trip.setCreationDate(new Date());
+        trip.setStatus("scheduled");
+        trip.setEditable(true);
+        // Поля User, Route, Bookings, Ratings не аннотированы @CsvBindByName
+        return trip;
+    }
+
     @Test
-    void testCreateTrip_Success() {
-        TripRecord tripRecord = new TripRecord();
-        tripRecord.setUserId("user-1");
-        tripRecord.setRouteId("route-1");
-        tripRecord.setDepartureTime(new Date());
-        tripRecord.setMaxPassengers((byte) 4);
-        tripRecord.setCreationDate(new Date());
-        tripRecord.setStatus("planned");
-        tripRecord.setEditable(true);
+    void createTrip_Success() throws DataAccessException {
+        Trip trip = createTestTrip();
+        String id = tripDao.createTrip(trip);
 
-        String tripId = tripDao.createTrip(tripRecord);
+        assertNotNull(id);
+        UUID generatedUUID = assertDoesNotThrow(() -> UUID.fromString(id));
 
-        // Проверяем, что ID был сгенерирован и соответствует формату UUID
-        assertNotNull(tripId);
-        assertDoesNotThrow(() -> UUID.fromString(tripId));
+        Optional<Trip> foundTripOpt = tripDao.getTripById(id);
+        assertTrue(foundTripOpt.isPresent());
+        Trip foundTrip = foundTripOpt.get();
 
-        // Проверяем, что поездка была добавлена
-        Optional<TripRecord> foundTrip = tripDao.getTripById(tripId);
+        assertEquals(generatedUUID, foundTrip.getId());
+        assertEquals(trip.getMaxPassengers(), foundTrip.getMaxPassengers());
+        assertEquals(trip.getStatus(), foundTrip.getStatus());
+        assertEquals(trip.isEditable(), foundTrip.isEditable());
+        assertNotNull(foundTrip.getDepartureTime());
+        assertNotNull(foundTrip.getCreationDate());
+    }
+
+    @Test
+    void createTrip_DataAccessException_OnFileError() {
+        Trip trip = createTestTrip();
+        assertTrue(tempFile.setWritable(false));
+        assertThrows(DataAccessException.class, () -> tripDao.createTrip(trip));
+        tempFile.setWritable(true);
+    }
+
+    @Test
+    void createTrip_NullInput_ShouldThrowException() {
+        assertThrows(IllegalArgumentException.class, () -> tripDao.createTrip(null));
+    }
+
+    @Test
+    void getTripById_Success() throws DataAccessException {
+        Trip trip = createTestTrip();
+        String id = tripDao.createTrip(trip);
+        Optional<Trip> foundTrip = tripDao.getTripById(id);
         assertTrue(foundTrip.isPresent());
-        assertEquals("planned", foundTrip.get().getStatus());
+        assertEquals(UUID.fromString(id), foundTrip.get().getId());
+        assertEquals(trip.getStatus(), foundTrip.get().getStatus());
     }
 
     @Test
-    void testCreateTrip_Failure() {
-        // Создаем поездку
-        TripRecord tripRecord = new TripRecord();
-        tripRecord.setUserId("user-1");
-        tripRecord.setRouteId("route-1");
-        tripRecord.setDepartureTime(new Date());
-        tripRecord.setMaxPassengers((byte) 4);
-        tripRecord.setCreationDate(new Date());
-        tripRecord.setStatus("planned");
-        tripRecord.setEditable(true);
-
-        // Делаем файл недоступным для записи
-        tempFile.setReadOnly();
-
-        // Ожидаем исключение при создании поездки
-        assertThrows(DataAccessException.class, () -> tripDao.createTrip(tripRecord));
-    }
-
-
-
-
-    @Test
-    void testGetTripById_Success() {
-        // Создаем тестовую поездку
-        TripRecord tripRecord = new TripRecord();
-        tripRecord.setUserId("user-1");
-        tripRecord.setRouteId("route-1");
-        tripRecord.setDepartureTime(new Date());
-        tripRecord.setMaxPassengers((byte) 4);
-        tripRecord.setCreationDate(new Date());
-        tripRecord.setStatus("planned");
-        tripRecord.setEditable(true);
-
-        String tripId = tripDao.createTrip(tripRecord);
-
-        // Получаем поездку по ID
-        Optional<TripRecord> foundTrip = tripDao.getTripById(tripId);
-
-        // Проверяем, что поездка найдена
-        assertTrue(foundTrip.isPresent());
-        assertEquals(tripId, foundTrip.get().getId());
-        assertEquals("planned", foundTrip.get().getStatus());
-    }
-
-    @Test
-    void testGetTripById_NotFound() {
-        // Пытаемся получить несуществующую поездку
-        Optional<TripRecord> foundTrip = tripDao.getTripById("non-existent-id");
-
-        // Проверяем, что поездка не найдена
+    void getTripById_NotFound() throws DataAccessException {
+        String nonExistentId = UUID.randomUUID().toString();
+        Optional<Trip> foundTrip = tripDao.getTripById(nonExistentId);
         assertFalse(foundTrip.isPresent());
     }
 
     @Test
-    void testUpdateTrip_Success() {
-        // Создаем тестовую поездку
-        TripRecord tripRecord = new TripRecord();
-        tripRecord.setUserId("user-1");
-        tripRecord.setRouteId("route-1");
-        tripRecord.setDepartureTime(new Date());
-        tripRecord.setMaxPassengers((byte) 4);
-        tripRecord.setCreationDate(new Date());
-        tripRecord.setStatus("planned");
-        tripRecord.setEditable(true);
-
-        String tripId = tripDao.createTrip(tripRecord);
-
-        // Обновляем поездку
-        tripRecord.setStatus("completed");
-        tripDao.updateTrip(tripRecord);
-
-        // Проверяем, что поездка обновлена
-        Optional<TripRecord> updatedTrip = tripDao.getTripById(tripId);
-        assertTrue(updatedTrip.isPresent());
-        assertEquals("completed", updatedTrip.get().getStatus());
+    void getTripById_DataAccessException_OnFileError() throws DataAccessException, IOException {
+        Trip trip = createTestTrip();
+        String id = tripDao.createTrip(trip);
+        assertTrue(Files.deleteIfExists(tempFile.toPath()));
+        assertThrows(DataAccessException.class, () -> tripDao.getTripById(id));
     }
 
     @Test
-    void testUpdateTrip_NotFound() {
-        // Пытаемся обновить несуществующую поездку
-        TripRecord tripRecord = new TripRecord();
-        tripRecord.setId("non-existent-id");
-        tripRecord.setUserId("user-1");
-        tripRecord.setRouteId("route-1");
-        tripRecord.setDepartureTime(new Date());
-        tripRecord.setMaxPassengers((byte) 4);
-        tripRecord.setCreationDate(new Date());
-        tripRecord.setStatus("planned");
-        tripRecord.setEditable(true);
+    void updateTrip_Success() throws DataAccessException {
+        Trip trip = createTestTrip();
+        String id = tripDao.createTrip(trip);
+        UUID tripUUID = UUID.fromString(id);
 
-        // Ожидаем исключение при обновлении
-        assertThrows(DataAccessException.class, () -> tripDao.updateTrip(tripRecord));
+        Trip createdTrip = tripDao.getTripById(id).orElseThrow(() -> new AssertionError("Failed to retrieve trip for update test"));
+
+        createdTrip.setStatus("completed");
+        createdTrip.setEditable(false);
+        tripDao.updateTrip(createdTrip);
+
+        Optional<Trip> updatedTripOpt = tripDao.getTripById(id);
+        assertTrue(updatedTripOpt.isPresent());
+        Trip updatedTrip = updatedTripOpt.get();
+
+        assertEquals("completed", updatedTrip.getStatus());
+        assertFalse(updatedTrip.isEditable());
+        assertEquals(tripUUID, updatedTrip.getId());
     }
 
     @Test
-    void testDeleteTrip_Success() {
-        // Создаем тестовую поездку
-        TripRecord tripRecord = new TripRecord();
-        tripRecord.setUserId("user-1");
-        tripRecord.setRouteId("route-1");
-        tripRecord.setDepartureTime(new Date());
-        tripRecord.setMaxPassengers((byte) 4);
-        tripRecord.setCreationDate(new Date());
-        tripRecord.setStatus("planned");
-        tripRecord.setEditable(true);
-
-        String tripId = tripDao.createTrip(tripRecord);
-
-        // Удаляем поездку
-        tripDao.deleteTrip(tripId);
-
-        // Проверяем, что поездка удалена
-        Optional<TripRecord> deletedTrip = tripDao.getTripById(tripId);
-        assertFalse(deletedTrip.isPresent());
+    void updateTrip_NotFound() {
+        Trip nonExistentTrip = createTestTrip();
+        nonExistentTrip.setId(UUID.randomUUID());
+        assertThrows(DataAccessException.class, () -> tripDao.updateTrip(nonExistentTrip));
     }
 
     @Test
-    void testDeleteTrip_NotFound() {
-        // Пытаемся удалить несуществующую поездку
-        assertThrows(DataAccessException.class, () -> tripDao.deleteTrip("non-existent-id"));
+    void updateTrip_NullInput_ShouldThrowException() {
+        assertThrows(IllegalArgumentException.class, () -> tripDao.updateTrip(null));
     }
 
     @Test
-    void testReadAllTrips_Success() throws IOException {
-        // Создаем несколько тестовых поездок
-        TripRecord trip1 = new TripRecord();
-        trip1.setUserId("user-1");
-        trip1.setRouteId("route-1");
-        trip1.setDepartureTime(new Date());
-        trip1.setMaxPassengers((byte) 4);
-        trip1.setCreationDate(new Date());
-        trip1.setStatus("planned");
-        trip1.setEditable(true);
+    void deleteTrip_Success() throws DataAccessException {
+        Trip trip = createTestTrip();
+        String id = tripDao.createTrip(trip);
+        assertTrue(tripDao.getTripById(id).isPresent());
+        assertDoesNotThrow(() -> tripDao.deleteTrip(id));
+        assertFalse(tripDao.getTripById(id).isPresent());
+    }
 
-        TripRecord trip2 = new TripRecord();
-        trip2.setUserId("user-2");
-        trip2.setRouteId("route-2");
-        trip2.setDepartureTime(new Date());
-        trip2.setMaxPassengers((byte) 4);
-        trip2.setCreationDate(new Date());
-        trip2.setStatus("completed");
-        trip2.setEditable(false);
+    @Test
+    void deleteTrip_NotFound() {
+        String nonExistentId = UUID.randomUUID().toString();
+        assertDoesNotThrow(() -> tripDao.deleteTrip(nonExistentId));
+    }
 
-        tripDao.createTrip(trip1);
-        tripDao.createTrip(trip2);
-
-        // Проверяем, что все поездки записаны и прочитаны
-        Optional<TripRecord> foundTrip1 = tripDao.getTripById(trip1.getId());
-        Optional<TripRecord> foundTrip2 = tripDao.getTripById(trip2.getId());
-
-        assertTrue(foundTrip1.isPresent());
-        assertTrue(foundTrip2.isPresent());
-        assertEquals("planned", foundTrip1.get().getStatus());
-        assertEquals("completed", foundTrip2.get().getStatus());
+    @Test
+    void deleteTrip_DataAccessException_OnFileError() throws DataAccessException {
+        Trip trip = createTestTrip();
+        String id = tripDao.createTrip(trip);
+        assertTrue(tempFile.setWritable(false));
+        assertThrows(DataAccessException.class, () -> tripDao.deleteTrip(id));
+        tempFile.setWritable(true);
     }
 }

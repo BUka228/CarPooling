@@ -1,13 +1,15 @@
 package dao.csv;
 
 import com.carpooling.dao.csv.CsvUserDao;
-import com.carpooling.entities.record.UserRecord;
+import com.carpooling.entities.database.Address;
+import com.carpooling.entities.database.User;
 import com.carpooling.exceptions.dao.DataAccessException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Date;
 import java.util.Optional;
@@ -17,150 +19,171 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class CsvUserDaoTest {
 
-    @TempDir
-    Path tempDir; // Временная директория для тестов
-
     private CsvUserDao userDao;
+    @TempDir
+    Path tempDir;
+
     private File tempFile;
 
     @BeforeEach
-    void setUp() {
-        // Создаем временный файл для тестов
-        tempFile = tempDir.resolve("test-users.csv").toFile();
+    void setUp() throws IOException {
+        String testFileName = "test-users.csv";
+        Path filePath = tempDir.resolve(testFileName);
+        Files.createFile(filePath);
+        tempFile = filePath.toFile();
         userDao = new CsvUserDao(tempFile.getAbsolutePath());
     }
 
-    @Test
-    void testCreateUser_Success() {
-        UserRecord userRecord = new UserRecord();
-        userRecord.setName("John Doe");
-        userRecord.setEmail("john.doe@example.com");
-        userRecord.setPassword("password123");
-        userRecord.setGender("Male");
-        userRecord.setPhone("1234567890");
-        userRecord.setBirthDate(new Date());
-        userRecord.setAddress("123 Main St");
-        userRecord.setPreferences("None");
+    private User createTestUser() {
+        User user = new User();
 
-        String userId = userDao.createUser(userRecord);
+        user.setName("Test User");
+        user.setEmail("test.user." + UUID.randomUUID() + "@example.com");
+        user.setPassword("password123");
+        user.setGender("Other");
+        user.setPhone("123-456-7890");
+        user.setBirthDate(new Date(System.currentTimeMillis() - 1000L * 3600 * 24 * 365 * 30));
+        user.setPreferences("Non-smoker, Quiet");
 
-        // Проверяем, что ID был сгенерирован и соответствует формату UUID
-        assertNotNull(userId);
-        assertDoesNotThrow(() -> UUID.fromString(userId));
-
-        // Проверяем, что пользователь был добавлен
-        Optional<UserRecord> foundUser = userDao.getUserById(userId);
-        assertTrue(foundUser.isPresent());
-        assertEquals("John Doe", foundUser.get().getName());
+        Address address = new Address();
+        address.setStreet("123 Main St");
+        address.setCity("Anytown");
+        user.setAddress(address);
+        return user;
     }
 
     @Test
-    void testCreateUser_Fail() {
-        // Делаем файл недоступным для записи
-        tempFile.setReadOnly();
+    void createUser_Success() throws DataAccessException {
+        User user = createTestUser();
+        String id = userDao.createUser(user);
 
-        // Проверяем, что выброшено исключение
-        assertThrows(DataAccessException.class, () -> userDao.createUser(new UserRecord()));
+        assertNotNull(id);
+        UUID generatedUUID = assertDoesNotThrow(() -> UUID.fromString(id));
 
-        // Восстанавливаем права доступа к файлу
+        Optional<User> foundUserOpt = userDao.getUserById(id);
+        assertTrue(foundUserOpt.isPresent());
+        User foundUser = foundUserOpt.get();
+
+        assertEquals(generatedUUID, foundUser.getId());
+        assertEquals(user.getName(), foundUser.getName());
+        assertEquals(user.getEmail(), foundUser.getEmail());
+        assertEquals(user.getPassword(), foundUser.getPassword());
+        assertEquals(user.getGender(), foundUser.getGender());
+        assertEquals(user.getPhone(), foundUser.getPhone());
+        assertEquals(user.getPreferences(), foundUser.getPreferences());
+        assertNotNull(foundUser.getBirthDate());
+
+        // Проверка Address зависит от того, как opencsv его обработал
+        assertNotNull(foundUser.getAddress(), "Address field read from CSV is null. Check opencsv mapping/converter for Address.");
+        if (foundUser.getAddress() != null) {
+            assertEquals(user.getAddress().getStreet(), foundUser.getAddress().getStreet());
+            assertEquals(user.getAddress().getCity(), foundUser.getAddress().getCity());
+        }
+    }
+
+    @Test
+    void createUser_DataAccessException_OnFileError() {
+        User user = createTestUser();
+        assertTrue(tempFile.setWritable(false));
+        assertThrows(DataAccessException.class, () -> userDao.createUser(user));
         tempFile.setWritable(true);
-
     }
 
     @Test
-    void testGetUserById_Success() {
-        // Создаем тестового пользователя
-        UserRecord userRecord = new UserRecord();
-        userRecord.setName("Jane Doe");
-        userRecord.setEmail("jane.doe@example.com");
-        userRecord.setPassword("password123");
-        userRecord.setGender("Female");
-        userRecord.setPhone("0987654321");
-        userRecord.setBirthDate(new Date());
-        userRecord.setAddress("456 Elm St");
-        userRecord.setPreferences("None");
+    void createUser_NullInput_ShouldThrowException() {
+        assertThrows(IllegalArgumentException.class, () -> userDao.createUser(null));
+    }
 
-        String userId = userDao.createUser(userRecord);
 
-        // Получаем пользователя по ID
-        Optional<UserRecord> foundUser = userDao.getUserById(userId);
-
-        // Проверяем, что пользователь найден
+    @Test
+    void getUserById_Success() throws DataAccessException {
+        User user = createTestUser();
+        String id = userDao.createUser(user);
+        Optional<User> foundUser = userDao.getUserById(id);
         assertTrue(foundUser.isPresent());
-        assertEquals(userId, foundUser.get().getId());
-        assertEquals("Jane Doe", foundUser.get().getName());
+        assertEquals(UUID.fromString(id), foundUser.get().getId());
+        assertEquals(user.getEmail(), foundUser.get().getEmail());
     }
 
     @Test
-    void testGetUserById_NotFound() {
-        // Пытаемся получить несуществующего пользователя
-        Optional<UserRecord> foundUser = userDao.getUserById("non-existent-id");
-
-        // Проверяем, что пользователь не найден
+    void getUserById_NotFound() throws DataAccessException {
+        String nonExistentId = UUID.randomUUID().toString();
+        Optional<User> foundUser = userDao.getUserById(nonExistentId);
         assertFalse(foundUser.isPresent());
     }
 
     @Test
-    void testUpdateUser_Success() {
-        // Создаем тестового пользователя
-        UserRecord userRecord = new UserRecord();
-        userRecord.setName("Alice");
-        userRecord.setEmail("alice@example.com");
-        userRecord.setPassword("password123");
-        userRecord.setGender("Female");
-        userRecord.setPhone("1234567890");
-        userRecord.setBirthDate(new Date());
-        userRecord.setAddress("789 Oak St");
-        userRecord.setPreferences("None");
+    void getUserById_DataAccessException_OnFileError() throws DataAccessException, IOException {
+        User user = createTestUser();
+        String id = userDao.createUser(user);
+        assertTrue(Files.deleteIfExists(tempFile.toPath()));
+        assertThrows(DataAccessException.class, () -> userDao.getUserById(id));
+    }
 
-        String userId = userDao.createUser(userRecord);
 
-        // Обновляем пользователя
-        userRecord.setName("Alice Smith");
-        userDao.updateUser(userRecord);
+    @Test
+    void updateUser_Success() throws DataAccessException {
+        User user = createTestUser();
+        String id = userDao.createUser(user);
+        UUID userUUID = UUID.fromString(id);
 
-        // Проверяем, что пользователь обновлен
-        Optional<UserRecord> updatedUser = userDao.getUserById(userId);
-        assertTrue(updatedUser.isPresent());
-        assertEquals("Alice Smith", updatedUser.get().getName());
+        User createdUser = userDao.getUserById(id).orElseThrow(() -> new AssertionError("Failed to retrieve user for update test"));
+
+        createdUser.setName("Updated Test User");
+        createdUser.setPhone("987-654-3210");
+        // Обновляем вложенный объект Address
+        if (createdUser.getAddress() == null) createdUser.setAddress(new Address()); // Инициализация, если null
+        createdUser.getAddress().setCity("NewCity");
+
+        userDao.updateUser(createdUser); // Используется специфичная реализация CsvUserDao.updateUser
+
+        Optional<User> updatedUserOpt = userDao.getUserById(id);
+        assertTrue(updatedUserOpt.isPresent());
+        User updatedUser = updatedUserOpt.get();
+
+        assertEquals("Updated Test User", updatedUser.getName());
+        assertEquals("987-654-3210", updatedUser.getPhone());
+        assertEquals(userUUID, updatedUser.getId());
+        assertNotNull(updatedUser.getAddress(), "Address is null after update. Check CSV writing/reading.");
+        assertEquals("NewCity", updatedUser.getAddress().getCity(), "Embedded Address city was not updated correctly.");
+        // Проверяем, что другие поля адреса не слетели (если они были)
+        assertEquals(user.getAddress().getStreet(), updatedUser.getAddress().getStreet());
     }
 
     @Test
-    void testUpdateUser_NotFound() {
-        // Пытаемся обновить несуществующего пользователя
-        UserRecord userRecord = new UserRecord();
-        userRecord.setId("non-existent-id");
-        userRecord.setName("Bob");
-
-        assertThrows(DataAccessException.class, () -> userDao.updateUser(userRecord));
+    void updateUser_NotFound() {
+        User nonExistentUser = createTestUser();
+        nonExistentUser.setId(UUID.randomUUID());
+        // Проверяем реализацию CsvUserDao.updateUser
+        assertThrows(DataAccessException.class, () -> userDao.updateUser(nonExistentUser));
     }
 
     @Test
-    void testDeleteUser_Success() {
-        // Создаем тестового пользователя
-        UserRecord userRecord = new UserRecord();
-        userRecord.setName("Charlie");
-        userRecord.setEmail("charlie@example.com");
-        userRecord.setPassword("password123");
-        userRecord.setGender("Male");
-        userRecord.setPhone("1234567890");
-        userRecord.setBirthDate(new Date());
-        userRecord.setAddress("101 Pine St");
-        userRecord.setPreferences("None");
-
-        String userId = userDao.createUser(userRecord);
-
-        // Удаляем пользователя
-        userDao.deleteUser(userId);
-
-        // Проверяем, что пользователь удален
-        Optional<UserRecord> deletedUser = userDao.getUserById(userId);
-        assertFalse(deletedUser.isPresent());
+    void updateUser_NullInput_ShouldThrowException() {
+        assertThrows(IllegalArgumentException.class, () -> userDao.updateUser(null));
     }
 
     @Test
-    void testDeleteUser_NotFound() {
-        // Пытаемся удалить несуществующего пользователя
-        assertThrows(DataAccessException.class, () -> userDao.deleteUser("non-existent-id"));
+    void deleteUser_Success() throws DataAccessException {
+        User user = createTestUser();
+        String id = userDao.createUser(user);
+        assertTrue(userDao.getUserById(id).isPresent());
+        assertDoesNotThrow(() -> userDao.deleteUser(id));
+        assertFalse(userDao.getUserById(id).isPresent());
+    }
+
+    @Test
+    void deleteUser_NotFound() {
+        String nonExistentId = UUID.randomUUID().toString();
+        assertDoesNotThrow(() -> userDao.deleteUser(nonExistentId));
+    }
+
+    @Test
+    void deleteUser_DataAccessException_OnFileError() throws DataAccessException {
+        User user = createTestUser();
+        String id = userDao.createUser(user);
+        assertTrue(tempFile.setWritable(false));
+        assertThrows(DataAccessException.class, () -> userDao.deleteUser(id));
+        tempFile.setWritable(true);
     }
 }

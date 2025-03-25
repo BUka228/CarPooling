@@ -36,11 +36,11 @@ public abstract class AbstractMongoDao<T> {
         try {
             String json = objectMapper.writeValueAsString(object);
             Document document = Document.parse(json);
-            document.remove("id");
+            document.remove("id"); // Удаляем поле id, так как используем _id
             return document;
         } catch (JsonProcessingException e) {
-            log.error(ERROR_CONVERT_OBJECT_TO_DOCUMENT, object, e);
-            throw new IllegalStateException(CONVERT_OBJECT_TO_DOCUMENT_ERROR, e);
+            log.error("Error converting object to document: {}", object, e);
+            throw new IllegalStateException("Error converting object to document", e);
         }
     }
 
@@ -52,7 +52,6 @@ public abstract class AbstractMongoDao<T> {
      */
     protected T fromDocument(Document document) {
         try {
-            // Убираем _id, заменяем его на id
             if (document.containsKey(MONGO_ID)) {
                 document.put("id", document.getObjectId(MONGO_ID).toHexString());
                 document.remove(MONGO_ID);
@@ -60,8 +59,8 @@ public abstract class AbstractMongoDao<T> {
             String json = document.toJson();
             return objectMapper.readValue(json, clazz);
         } catch (Exception e) {
-            log.error(ERROR_CONVERT_DOCUMENT_TO_OBJECT, document, e);
-            throw new IllegalStateException(CONVERT_DOCUMENT_TO_OBJECT_ERROR, e);
+            log.error("Error converting document to object: {}", document, e);
+            throw new IllegalStateException("Error converting document to object", e);
         }
     }
 }

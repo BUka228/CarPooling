@@ -28,6 +28,14 @@ public class Constants {
     public static final String TRIP_ID = "tripId";
     public static final String MONGO_ID = "_id";
 
+    // Названия DAO
+    public static final String USER_DAO = "User";
+    public static final String TRIP_DAO = "Trip";
+    public static final String ROUTE_DAO = "Route";
+    public static final String BOOKING_DAO = "Booking";
+    public static final String RATING_DAO = "Rating";
+
+
     // Названия файлов
     public static final String USERS_XML = "users.xml";
     public static final String TRIPS_XML = "trips.xml";

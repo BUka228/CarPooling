@@ -4,8 +4,14 @@ import com.carpooling.cli.context.CliContext;
 import com.carpooling.entities.database.Route;
 import com.carpooling.entities.database.Trip;
 import com.carpooling.exceptions.service.TripServiceException;
+import com.carpooling.exceptions.service.UserServiceException;
+import com.carpooling.factories.DaoFactory;
+import com.carpooling.services.base.RouteService;
 import com.carpooling.services.base.TripService;
+import com.carpooling.services.base.UserService;
+import com.carpooling.services.impl.RouteServiceImpl;
 import com.carpooling.services.impl.TripServiceImpl;
+import com.carpooling.services.impl.UserServiceImpl;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import picocli.CommandLine.Command;
@@ -14,20 +20,11 @@ import picocli.CommandLine.Option;
 import java.sql.Date;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Optional;
 
 
 @Command(name = "createTrip", description = "Создание новой поездки")
 public class CreateTripCommand implements Runnable {
-
-    private final TripService tripService;
-
-    public CreateTripCommand() {
-        this(new TripServiceImpl());
-    }
-
-    public CreateTripCommand(TripService tripService) {
-        this.tripService = tripService;
-    }
 
     @Option(names = {"-d", "--departureDate"}, description = "Дата отправления (гггг-ММ-дд)", required = true)
     private String departureDate;
@@ -46,6 +43,14 @@ public class CreateTripCommand implements Runnable {
 
     @Override
     public void run() {
+        // Инициализация сервисов
+        /*RouteService routeService = new RouteServiceImpl(DaoFactory.getRouteDao(CliContext.getCurrentStorageType()));
+        TripService tripService = new TripServiceImpl(
+                DaoFactory.getTripDao(CliContext.getCurrentStorageType()),
+                routeService
+        );
+        UserService userService = new UserServiceImpl(DaoFactory.getUserDao(CliContext.getCurrentStorageType()));
+
         String currentUserId = CliContext.getCurrentUserId();
         if (currentUserId == null) {
             System.err.println("Ошибка: Вы не авторизованы.");
@@ -53,6 +58,15 @@ public class CreateTripCommand implements Runnable {
         }
 
         try {
+            // Получение объекта User по currentUserId
+            Optional<User> userOptional = userService.getUserById(currentUserId);
+            if (userOptional.isEmpty()) {
+                System.err.println("Ошибка: Пользователь с ID " + currentUserId + " не найден.");
+                return;
+            }
+            User user = userOptional.get();
+
+            // Создание объекта Trip
             Trip trip = new Trip();
             trip.setDepartureTime(parseDateTime(departureDate, departureTime)); // Преобразуем строки в Date
             trip.setMaxPassengers(maxPassengers);
@@ -60,19 +74,21 @@ public class CreateTripCommand implements Runnable {
             trip.setStatus("SCHEDULED");
             trip.setEditable(true);
 
+            // Создание объекта Route
             Route route = new Route();
             route.setStartPoint(startPoint);
             route.setEndPoint(endPoint);
             route.setDate(parseDateTime(departureDate, departureTime)); // Преобразуем строки в Date
 
-            String tripId = tripService.createTrip(trip, route, currentUserId);
+            // Вызов метода createTrip с объектами Trip, Route и User
+            String tripId = tripService.createTrip(trip, route, user);
             CliContext.setCurrentTripId(tripId);
             System.out.println("Поездка создана с ID: " + tripId);
         } catch (IllegalArgumentException e) {
-            System.err.println(e.getMessage()); // Выводим сообщение об ошибке
-        } catch (TripServiceException e) {
+            System.err.println(e.getMessage()); // Выводим сообщение об ошибке формата даты
+        } catch (TripServiceException | UserServiceException e) {
             System.err.println("Ошибка при создании поездки: " + e.getMessage());
-        }
+        }*/
     }
 
     // Метод для преобразования строки в Date

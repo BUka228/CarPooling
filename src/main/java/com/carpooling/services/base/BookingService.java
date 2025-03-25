@@ -1,6 +1,7 @@
 package com.carpooling.services.base;
 
 import com.carpooling.entities.database.Booking;
+import com.carpooling.entities.database.Trip;
 import com.carpooling.exceptions.service.BookingServiceException;
 
 import java.util.List;
@@ -16,12 +17,10 @@ public interface BookingService {
      * Создание нового бронирования.
      *
      * @param booking Бронирование для создания.
-     * @param tripId  ID поездки, к которой относится бронирование.
-     * @param userId  ID пользователя, создающего бронирование.
      * @return ID созданного бронирования.
      * @throws BookingServiceException Если произошла ошибка при создании.
      */
-    String createBooking(Booking booking, String tripId, String userId) throws BookingServiceException;
+    String createBooking(Booking booking) throws BookingServiceException;
 
     /**
      * Получение бронирования по ID.
@@ -44,11 +43,9 @@ public interface BookingService {
      * Обновление данных бронирования.
      *
      * @param booking Бронирование с обновленными данными.
-     * @param tripId  ID поездки, к которой относится бронирование.
-     * @param userId  ID пользователя.
      * @throws BookingServiceException Если произошла ошибка при обновлении.
      */
-    void updateBooking(Booking booking, String tripId, String userId) throws BookingServiceException;
+    void updateBooking(Booking booking) throws BookingServiceException;
 
     /**
      * Удаление бронирования по ID.

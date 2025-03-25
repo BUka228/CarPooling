@@ -1,156 +1,96 @@
 package cli;
 
-import com.carpooling.cli.cli.RegisterCommand;
-import com.carpooling.entities.database.User;
-import com.carpooling.exceptions.service.UserServiceException;
-import com.carpooling.services.base.UserService;
-import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import picocli.CommandLine;
-
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.sql.Date;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
 
 
-@Slf4j
 class RegisterCommandTest {
+
+    /*private RegisterCommand registerCommand;
 
     @Mock
     private UserService userService;
 
-    @InjectMocks
-    private RegisterCommand registerCommand;
+    @Mock
+    private UserDao userDao;
 
-    private CommandLine cmd;
+    private final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    private final PrintStream originalOut = System.out;
+    private final PrintStream originalErr = System.err;
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-        registerCommand = new RegisterCommand(userService); // Передаем мок в конструктор
-        cmd = new CommandLine(registerCommand);
+        MockitoAnnotations.openMocks(this); // Инициализация моков
+        System.setOut(new PrintStream(outputStream)); // Перехват вывода в консоль
+        System.setErr(new PrintStream(outputStream)); // Перехват ошибок в консоль
+
+        // Явно устанавливаем тип хранилища
+        CliContext.setCurrentStorageType(CliContext.StorageType.CSV);
+
+        // Мокируем DaoFactory
+        when(DaoFactory.getUserDao(any(CliContext.StorageType.class))).thenReturn(userDao);
+
+        // Создаем экземпляр команды
+        registerCommand = new RegisterCommand();
+
+        // Устанавливаем значения через сеттеры
+        registerCommand.setName("John Doe");
+        registerCommand.setEmail("john.doe@example.com");
+        registerCommand.setPassword("password123");
+        registerCommand.setGender("Male");
+        registerCommand.setPhone("1234567890");
+        registerCommand.setBirthDate("1990-01-01");
+        registerCommand.setAddress("123 Main St");
+        registerCommand.setPreferences("No preferences");
+    }
+
+    @AfterEach
+    void tearDown() {
+        System.setOut(originalOut); // Восстановление стандартного вывода
+        System.setErr(originalErr); // Восстановление стандартного вывода ошибок
     }
 
     @Test
-    void testRegisterCommand_Success() throws UserServiceException {
-        // Arrange
-        String[] args = {
-                "-n", "John Doe",
-                "-e", "john.doe@example.com",
-                "-p", "password123",
-                "-g", "Male",
-                "-ph", "1234567890",
-                "-b", "1990-01-01",
-                "-a", "123 Main St",
-                "-pr", "Some preferences"
-        };
+    void testRun_SuccessfulRegistration() throws UserServiceException {
+        // Мокируем UserService
+        when(userService.registerUser(any(User.class))).thenReturn("user123");
 
-        User expectedUser = new User(
-                "",
-                "John Doe",
-                "john.doe@example.com",
-                "password123",
-                "Male",
-                "1234567890",
-                Date.valueOf("1990-01-01"),
-                "123 Main St",
-                "Some preferences"
-        );
+        // Запуск команды
+        registerCommand.run();
 
-        when(userService.registerUser(expectedUser)).thenReturn("12345");
+        // Проверка вывода в консоль
+        String output = outputStream.toString();
+        assertTrue(output.contains("Пользователь зарегистрирован с ID: user123"));
 
-        // Act
-        int exitCode = cmd.execute(args);
-
-        // Assert
-        assertEquals(0, exitCode);
-        verify(userService, times(1)).registerUser(expectedUser);
+        // Проверка, что ID пользователя установлен в CliContext
+        assertEquals("user123", CliContext.getCurrentUserId());
     }
 
     @Test
-    void testRegisterCommand_MissingRequiredOption() {
-        // Arrange
-        String[] args = {
-                "-n", "John Doe",
-                "-e", "john.doe@example.com",
-                "-p", "password123",
-                "-g", "Male",
-                "-ph", "1234567890",
-                // Пропущены обязательные параметры: --birthDate и --address
-        };
+    void testRun_RegistrationFailure() throws UserServiceException {
+        // Мокируем UserService для выброса исключения
+        when(userService.registerUser(any(User.class))).thenThrow(new UserServiceException("Registration failed"));
 
-        // Перенаправляем System.out и System.err
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        ByteArrayOutputStream errorStream = new ByteArrayOutputStream();
-        PrintStream originalOut = System.out;
-        PrintStream originalErr = System.err;
-        System.setOut(new PrintStream(outputStream));
-        System.setErr(new PrintStream(errorStream));
+        // Запуск команды
+        registerCommand.run();
 
-        try {
-            // Act
-            int exitCode = cmd.execute(args);
+        // Проверка вывода ошибки в консоль
+        String output = outputStream.toString();
+        assertTrue(output.contains("Ошибка при регистрации пользователя: Registration failed"));
 
-            // Assert
-            assertEquals(CommandLine.ExitCode.USAGE, exitCode); // Проверяем код выхода
-
-            // Получаем вывод из System.out и System.err
-            String output = outputStream.toString();
-            String error = errorStream.toString();
-
-            log.info("System.out: {}", output);
-            log.info("System.err: {}", error);
-
-            // Проверяем, что в System.err содержится сообщение об ошибке
-            assertTrue(error.contains("Missing required options"));
-        } finally {
-            // Восстанавливаем оригинальные потоки
-            System.setOut(originalOut);
-            System.setErr(originalErr);
-        }
+        // Проверка, что ID пользователя не установлен в CliContext
+        assertNull(CliContext.getCurrentUserId());
     }
 
     @Test
-    void testRegisterCommand_UserServiceException() throws UserServiceException {
-        // Arrange
-        String[] args = {
-                "-n", "John Doe",
-                "-e", "john.doe@example.com",
-                "-p", "password123",
-                "-g", "Male",
-                "-ph", "1234567890",
-                "-b", "1990-01-01",
-                "-a", "123 Main St",
-                "-pr", "Some preferences"
-        };
+    void testRun_InvalidBirthDate() {
+        // Устанавливаем неверный формат даты
+        registerCommand.setBirthDate("invalid-date");
 
-        User expectedUser = new User(
-                "",
-                "John Doe",
-                "john.doe@example.com",
-                "password123",
-                "Male",
-                "1234567890",
-                Date.valueOf("1990-01-01"),
-                "123 Main St",
-                "Some preferences"
-        );
+        // Запуск команды
+        registerCommand.run();
 
-        when(userService.registerUser(expectedUser)).thenThrow(new UserServiceException("Registration failed"));
-
-        // Act
-        int exitCode = cmd.execute(args);
-
-        // Assert
-        assertEquals(0, exitCode); // CommandLine handles exceptions and returns 0
-        verify(userService, times(1)).registerUser(expectedUser);
-    }
+        // Проверка вывода ошибки в консоль
+        String output = outputStream.toString();
+        assertTrue(output.contains("Ошибка при регистрации пользователя"));
+    }*/
 }

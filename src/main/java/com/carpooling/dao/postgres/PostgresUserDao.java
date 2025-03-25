@@ -1,137 +1,99 @@
 package com.carpooling.dao.postgres;
 
 import com.carpooling.dao.base.UserDao;
-import com.carpooling.entities.record.UserRecord;
+import com.carpooling.entities.database.User;
 import com.carpooling.exceptions.dao.DataAccessException;
+import com.carpooling.utils.HibernateUtil;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.Contract;
-import org.jetbrains.annotations.NotNull;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.Optional;
+import java.util.UUID;
 
-import static com.carpooling.constants.ErrorMessages.USER_UPDATE_ERROR;
-import static com.carpooling.constants.ErrorMessages.*;
-import static com.carpooling.constants.LogMessages.*;
-import static com.carpooling.constants.Constants.*;
+
+import org.hibernate.HibernateException;
 
 @Slf4j
-public class PostgresUserDao extends AbstractPostgresDao implements UserDao {
+@AllArgsConstructor
+public class PostgresUserDao implements UserDao {
 
-    public PostgresUserDao(Connection connection) {
-        super(connection);
-    }
+    private final SessionFactory sessionFactory;
 
     @Override
-    public String createUser(@NotNull UserRecord userRecord) throws DataAccessException {
-        String userId = generateId();
-
-        try (PreparedStatement statement = connection.prepareStatement(CREATE_USER_SQL)) {
-            statement.setObject(1, stringToUUID(userId));
-            statement.setString(2, userRecord.getName());
-            statement.setString(3, userRecord.getEmail());
-            statement.setString(4, userRecord.getPassword());
-            statement.setString(5, userRecord.getGender());
-            statement.setString(6, userRecord.getPhone());
-            statement.setDate(7, new java.sql.Date(userRecord.getBirthDate().getTime()));
-            statement.setString(8, userRecord.getAddress());
-            statement.setString(9, userRecord.getPreferences());
-
-            int rowsInserted = statement.executeUpdate();
-            if (rowsInserted > 0) {
-                log.info(CREATE_USER_SUCCESS, userId);
-                return userId;
-            } else {
-                log.error(ERROR_CREATE_USER, userRecord.getName());
-                throw new DataAccessException(USER_CREATION_ERROR);
-            }
-        } catch (SQLException e) {
-            log.error(ERROR_CREATE_USER, userRecord.getName(), e);
-            throw new DataAccessException(USER_CREATION_ERROR, e);
+    public String createUser(User user) throws DataAccessException {
+        Transaction transaction = null;
+        try (Session session = sessionFactory.openSession()) {
+            transaction = session.beginTransaction();
+            session.persist(user);
+            transaction.commit();
+            log.info("User created successfully: {}", user.getId());
+            return user.getId().toString();
+        } catch (HibernateException e) {
+            if (transaction != null) transaction.rollback();
+            log.error("Error creating user: {}", e.getMessage());
+            throw new DataAccessException("Error creating user", e) {};
         }
     }
 
     @Override
-    public Optional<UserRecord> getUserById(String id) throws DataAccessException {
-        try (PreparedStatement statement = connection.prepareStatement(GET_USER_BY_ID_SQL)) {
-            statement.setObject(1, stringToUUID(id));
-            ResultSet resultSet = statement.executeQuery();
-
-            if (resultSet.next()) {
-                log.info(GET_USER_START, id);
-                return Optional.of(mapToUser(resultSet));
+    public Optional<User> getUserById(String id) throws DataAccessException {
+        try (Session session = sessionFactory.openSession()) {
+            UUID uuid = UUID.fromString(id);
+            User user = session.get(User.class, uuid);
+            if (user != null) {
+                log.info("User found: {}", id);
             } else {
-                log.warn(WARN_USER_NOT_FOUND, id);
-                return Optional.empty();
+                log.warn("User not found: {}", id);
             }
-        } catch (SQLException e) {
-            log.error(ERROR_GET_USER, id, e);
-            throw new DataAccessException(String.format(USER_NOT_FOUND_ERROR, id), e);
+            return Optional.ofNullable(user);
+        } catch (HibernateException e) {
+            log.error("Error reading user: {}", e.getMessage());
+            throw new DataAccessException("Error reading user", e) {};
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid UUID format: {}", id);
+            throw new DataAccessException("Invalid UUID format", e) {};
         }
     }
 
     @Override
-    public void updateUser(@NotNull UserRecord userRecord) throws DataAccessException {
-        try (PreparedStatement statement = connection.prepareStatement(UPDATE_USER_SQL)) {
-            statement.setString(1, userRecord.getName());
-            statement.setString(2, userRecord.getEmail());
-            statement.setString(3, userRecord.getPassword());
-            statement.setString(4, userRecord.getGender());
-            statement.setString(5, userRecord.getPhone());
-            statement.setDate(6, new java.sql.Date(userRecord.getBirthDate().getTime()));
-            statement.setString(7, userRecord.getAddress());
-            statement.setString(8, userRecord.getPreferences());
-            statement.setObject(9, stringToUUID(userRecord.getId()));
-
-
-            int rowsUpdated = statement.executeUpdate();
-            if (rowsUpdated > 0) {
-                log.info(UPDATE_USER_SUCCESS, userRecord.getId());
-            } else {
-                log.warn(WARN_USER_NOT_FOUND, userRecord.getId());
-                throw new DataAccessException(String.format(USER_NOT_FOUND_ERROR, userRecord.getId()));
-            }
-        } catch (SQLException e) {
-            log.error(ERROR_UPDATE_USER, userRecord.getId(), e);
-            throw new DataAccessException(USER_UPDATE_ERROR, e);
+    public void updateUser(User userRecord) throws DataAccessException {
+        Transaction transaction = null;
+        try (Session session = sessionFactory.openSession()) {
+            transaction = session.beginTransaction();
+            session.merge(userRecord);
+            transaction.commit();
+            log.info("User updated successfully: {}", userRecord.getId());
+        } catch (HibernateException e) {
+            if (transaction != null) transaction.rollback();
+            log.error("Error updating user: {}", e.getMessage());
+            throw new DataAccessException("Error updating user", e) {};
         }
     }
 
     @Override
     public void deleteUser(String id) throws DataAccessException {
-        try (PreparedStatement statement = connection.prepareStatement(DELETE_USER_SQL)) {
-            statement.setObject(1, stringToUUID(id));
-
-            int rowsDeleted = statement.executeUpdate();
-            if (rowsDeleted > 0) {
-                log.info(DELETE_USER_SUCCESS, id);
+        Transaction transaction = null;
+        try (Session session = sessionFactory.openSession()) {
+            transaction = session.beginTransaction();
+            UUID uuid = UUID.fromString(id);
+            User user = session.get(User.class, uuid);
+            if (user != null) {
+                session.remove(user);
+                transaction.commit();
+                log.info("User deleted successfully: {}", id);
             } else {
-                log.warn(WARN_USER_NOT_FOUND, id);
-                throw new DataAccessException(String.format(USER_NOT_FOUND_ERROR, id));
+                log.warn("User not found for deletion: {}", id);
             }
-        } catch (SQLException e) {
-            log.error(ERROR_DELETE_USER, id, e);
-            throw new DataAccessException(USER_DELETE_ERROR, e);
+        } catch (HibernateException e) {
+            if (transaction != null) transaction.rollback();
+            log.error("Error deleting user: {}", e.getMessage());
+            throw new DataAccessException("Error deleting user", e) {};
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid UUID format: {}", id);
+            throw new DataAccessException("Invalid UUID format", e) {};
         }
     }
-
-    @NotNull
-    @Contract("_ -> new")
-    private UserRecord mapToUser(@NotNull ResultSet resultSet) throws SQLException {
-        return new UserRecord(
-                resultSet.getString("id"),
-                resultSet.getString("name"),
-                resultSet.getString("email"),
-                resultSet.getString("password"),
-                resultSet.getString("gender"),
-                resultSet.getString("phone"),
-                resultSet.getDate("birth_date"),
-                resultSet.getString("address"),
-                resultSet.getString("preferences")
-        );
-    }
 }
-

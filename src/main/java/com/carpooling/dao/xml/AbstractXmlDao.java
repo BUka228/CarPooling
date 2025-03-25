@@ -115,37 +115,52 @@ public abstract class AbstractXmlDao<T, W> {
      * Удаляет запись по условию.
      *
      * @param predicate Условие для удаления.
+     * @return true, если запись была удалена, false, если запись не найдена.
      * @throws JAXBException Если произошла ошибка при записи XML.
      */
-    protected void deleteById(Predicate<T> predicate) throws JAXBException {
+    protected boolean deleteById(Predicate<T> predicate) throws JAXBException {
         List<T> items = readAll();
         List<T> updatedItems = new ArrayList<>();
+        boolean removed = false;
+
         for (T item : items) {
             if (!predicate.test(item)) {
                 updatedItems.add(item);
+            } else {
+                removed = true;
             }
         }
-        if (items.size() == updatedItems.size())
-            throw new JAXBException(ERROR_DELETE_RECORD);
-        writeAll(updatedItems);
+
+        if (removed) {
+            writeAll(updatedItems);
+        }
+        return removed;
     }
 
     /**
-     * Обновляет запись в списке.
+     * Обновляет запись по условию.
      *
-     * @param items     Список записей.
      * @param predicate Условие для поиска записи.
-     * @param newItem   Новая запись.
-     * @return true, если запись была обновлена, иначе false.
+     * @param newItem   Новая запись для замены существующей.
+     * @return true, если запись была обновлена, false, если запись не найдена.
+     * @throws JAXBException Если произошла ошибка при чтении или записи XML.
      */
-    protected boolean updateItem(@NotNull List<T> items, Predicate<T> predicate, T newItem) {
+    protected boolean updateItem(Predicate<T> predicate, T newItem) throws JAXBException {
+        List<T> items = readAll();
+        boolean updated = false;
+
         for (int i = 0; i < items.size(); i++) {
             if (predicate.test(items.get(i))) {
                 items.set(i, newItem);
-                return true;
+                updated = true;
+                break; // Предполагаем, что запись уникальна по предикату
             }
         }
-        return false;
+
+        if (updated) {
+            writeAll(items);
+        }
+        return updated;
     }
 
     /**
@@ -153,8 +168,8 @@ public abstract class AbstractXmlDao<T, W> {
      *
      * @return Уникальный ID.
      */
-    protected String generateId() {
-        return UUID.randomUUID().toString();
+    protected UUID generateId() {
+        return UUID.randomUUID();
     }
 
     /**

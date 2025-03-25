@@ -1,11 +1,13 @@
 package com.carpooling.factories;
 
 import com.carpooling.cli.context.CliContext;
+import com.carpooling.constants.LogMessages;
 import com.carpooling.dao.base.*;
 import com.carpooling.dao.csv.*;
 import com.carpooling.dao.mongo.*;
 import com.carpooling.dao.postgres.*;
 import com.carpooling.dao.xml.*;
+import com.carpooling.utils.HibernateUtil;
 import com.carpooling.utils.MongoDBUtil;
 import com.carpooling.utils.PostgresConnectionUtil;
 import com.mongodb.client.MongoCollection;
@@ -31,7 +33,7 @@ public class DaoFactory {
     @NotNull
     @Contract("_ -> new")
     public static UserDao getUserDao(@NotNull CliContext.StorageType storageType) {
-        log.info(INIT_DAO_START, storageType);
+        log.info(LogMessages.INIT_DAO_START, USER_DAO, storageType);
         try {
             UserDao userDao = switch (storageType) {
                 case XML -> {
@@ -46,15 +48,12 @@ public class DaoFactory {
                     MongoCollection<Document> collection = new MongoDBUtil().getCollection(MONGO_COLLECTION_USERS);
                     yield new MongoUserDao(collection);
                 }
-                case POSTGRES -> {
-                    Connection connection = PostgresConnectionUtil.getConnection();
-                    yield new PostgresUserDao(connection);
-                }
+                case POSTGRES -> new PostgresUserDao(HibernateUtil.getSessionFactory());
             };
-            log.info(INIT_DAO_SUCCESS, storageType);
+            log.info(LogMessages.INIT_DAO_SUCCESS, USER_DAO, storageType);
             return userDao;
-        } catch (IOException | SQLException e) {
-            log.error(INIT_DAO_ERROR, storageType, e);
+        } catch (IOException e) {
+            log.error(INIT_DAO_ERROR, USER_DAO, storageType, e);
             throw new RuntimeException(ERROR_INIT_USER_DAO, e);
         }
     }
@@ -62,7 +61,7 @@ public class DaoFactory {
     @NotNull
     @Contract("_ -> new")
     public static TripDao getTripDao(@NotNull CliContext.StorageType storageType) {
-        log.info(INIT_DAO_START, storageType);
+        log.info(LogMessages.INIT_DAO_START, TRIP_DAO, storageType);
         try {
             TripDao tripDao = switch (storageType) {
                 case XML -> {
@@ -77,15 +76,12 @@ public class DaoFactory {
                     MongoCollection<Document> collection = new MongoDBUtil().getCollection(MONGO_COLLECTION_TRIPS);
                     yield new MongoTripDao(collection);
                 }
-                case POSTGRES -> {
-                    Connection connection = PostgresConnectionUtil.getConnection();
-                    yield new PostgresTripDao(connection);
-                }
+                case POSTGRES -> new PostgresTripDao(HibernateUtil.getSessionFactory());
             };
-            log.info(INIT_DAO_SUCCESS, storageType);
+            log.info(LogMessages.INIT_DAO_SUCCESS, TRIP_DAO, storageType);
             return tripDao;
-        } catch (IOException | SQLException e) {
-            log.error(INIT_DAO_ERROR, storageType, e);
+        } catch (IOException e) {
+            log.error(INIT_DAO_ERROR, TRIP_DAO, storageType, e);
             throw new RuntimeException(ERROR_INIT_TRIP_DAO, e);
         }
     }
@@ -93,7 +89,7 @@ public class DaoFactory {
     @NotNull
     @Contract("_ -> new")
     public static RouteDao getRouteDao(@NotNull CliContext.StorageType storageType) {
-        log.info(INIT_DAO_START, storageType);
+        log.info(LogMessages.INIT_DAO_START, ROUTE_DAO, storageType);
         try {
             RouteDao routeDao = switch (storageType) {
                 case XML -> {
@@ -108,15 +104,12 @@ public class DaoFactory {
                     MongoCollection<Document> collection = new MongoDBUtil().getCollection(MONGO_COLLECTION_ROUTES);
                     yield new MongoRouteDao(collection);
                 }
-                case POSTGRES -> {
-                    Connection connection = PostgresConnectionUtil.getConnection();
-                    yield new PostgresRouteDao(connection);
-                }
+                case POSTGRES -> new PostgresRouteDao(HibernateUtil.getSessionFactory());
             };
-            log.info(INIT_DAO_SUCCESS, storageType);
+            log.info(LogMessages.INIT_DAO_SUCCESS, ROUTE_DAO, storageType);
             return routeDao;
-        } catch (IOException | SQLException e) {
-            log.error(INIT_DAO_ERROR, storageType, e);
+        } catch (IOException e) {
+            log.error(INIT_DAO_ERROR, ROUTE_DAO, storageType, e);
             throw new RuntimeException(ERROR_INIT_ROUTE_DAO, e);
         }
     }
@@ -124,7 +117,7 @@ public class DaoFactory {
     @NotNull
     @Contract("_ -> new")
     public static BookingDao getBookingDao(@NotNull CliContext.StorageType storageType) {
-        log.info(INIT_DAO_START, storageType);
+        log.info(LogMessages.INIT_DAO_START, BOOKING_DAO, storageType);
         try {
             BookingDao bookingDao = switch (storageType) {
                 case XML -> {
@@ -139,15 +132,12 @@ public class DaoFactory {
                     MongoCollection<Document> collection = new MongoDBUtil().getCollection(MONGO_COLLECTION_BOOKINGS);
                     yield new MongoBookingDao(collection);
                 }
-                case POSTGRES -> {
-                    Connection connection = PostgresConnectionUtil.getConnection();
-                    yield new PostgresBookingDao(connection);
-                }
+                case POSTGRES -> new PostgresBookingDao(HibernateUtil.getSessionFactory());
             };
-            log.info(INIT_DAO_SUCCESS, storageType);
+            log.info(LogMessages.INIT_DAO_SUCCESS, BOOKING_DAO, storageType);
             return bookingDao;
-        } catch (IOException | SQLException e) {
-            log.error(INIT_DAO_ERROR, storageType, e);
+        } catch (IOException e) {
+            log.error(INIT_DAO_ERROR, BOOKING_DAO,  storageType, e);
             throw new RuntimeException(ERROR_INIT_BOOKING_DAO, e);
         }
     }
@@ -155,7 +145,7 @@ public class DaoFactory {
     @NotNull
     @Contract("_ -> new")
     public static RatingDao getRatingDao(@NotNull CliContext.StorageType storageType) {
-        log.info(INIT_DAO_START, storageType);
+        log.info(LogMessages.INIT_DAO_START, RATING_DAO, storageType);
         try {
             RatingDao ratingDao = switch (storageType) {
                 case XML -> {
@@ -170,15 +160,12 @@ public class DaoFactory {
                     MongoCollection<Document> collection = new MongoDBUtil().getCollection(MONGO_COLLECTION_RATINGS);
                     yield new MongoRatingDao(collection);
                 }
-                case POSTGRES -> {
-                    Connection connection = PostgresConnectionUtil.getConnection();
-                    yield new PostgresRatingDao(connection);
-                }
+                case POSTGRES -> new PostgresRatingDao(HibernateUtil.getSessionFactory());
             };
-            log.info(INIT_DAO_SUCCESS, storageType);
+            log.info(LogMessages.INIT_DAO_SUCCESS, RATING_DAO, storageType);
             return ratingDao;
-        } catch (IOException | SQLException e) {
-            log.error(INIT_DAO_ERROR, storageType, e);
+        } catch (IOException e) {
+            log.error(INIT_DAO_ERROR, RATING_DAO, storageType, e);
             throw new RuntimeException(ERROR_INIT_RATING_DAO, e);
         }
     }

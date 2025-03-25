@@ -1,12 +1,11 @@
 package dao.xml;
 
 import com.carpooling.dao.xml.XmlRouteDao;
-import com.carpooling.entities.record.RouteRecord;
+import com.carpooling.entities.database.Route;
 import com.carpooling.exceptions.dao.DataAccessException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Date;
@@ -19,135 +18,138 @@ class XmlRouteDaoTest {
 
     private XmlRouteDao routeDao;
     @TempDir
-    Path tempDir; // Временная директория для тестов
+    Path tempDir;
 
     private File tempFile;
 
-
-
     @BeforeEach
     void setUp() {
-        // Создаем временный файл для тестов
-        tempFile = tempDir.resolve("test-routes.xml").toFile();
+        String testFileName = "test-routes.xml";
+        tempFile = tempDir.resolve(testFileName).toFile();
         routeDao = new XmlRouteDao(tempFile.getAbsolutePath());
     }
 
+    private Route createTestRoute() {
+        Route route = new Route();
+        route.setStartingPoint("City A");
+        route.setEndingPoint("City B");
+        route.setDate(new Date());
+        route.setEstimatedDuration((short) 120); // 2 hours
+        return route;
+    }
 
     @Test
-    void testCreateRoute_Success() {
-        // Создаем тестовый маршрут
-        RouteRecord routeRecord = new RouteRecord();
-        routeRecord.setStartPoint("Start Point");
-        routeRecord.setEndPoint("End Point");
-        routeRecord.setDate(new Date());
-        routeRecord.setEstimatedDuration((short) 120);
+    void createRoute_Success() throws DataAccessException {
+        Route route = createTestRoute();
+        String id = routeDao.createRoute(route);
 
-        // Создаем маршрут
-        String routeId = routeDao.createRoute(routeRecord);
+        assertNotNull(id);
+        UUID generatedUUID = assertDoesNotThrow(() -> UUID.fromString(id));
 
-        // Проверяем, что ID был сгенерирован и соответствует формату UUID
-        assertNotNull(routeId);
-        assertDoesNotThrow(() -> UUID.fromString(routeId));
+        Optional<Route> foundRouteOpt = routeDao.getRouteById(id);
+        assertTrue(foundRouteOpt.isPresent(), "Route should be found after creation");
+        Route foundRoute = foundRouteOpt.get();
 
-        // Проверяем, что маршрут был добавлен
-        Optional<RouteRecord> foundRoute = routeDao.getRouteById(routeId);
+        assertEquals(generatedUUID, foundRoute.getId());
+        assertEquals(route.getStartingPoint(), foundRoute.getStartingPoint());
+        assertEquals(route.getEndingPoint(), foundRoute.getEndingPoint());
+        assertEquals(route.getEstimatedDuration(), foundRoute.getEstimatedDuration());
+        assertNotNull(foundRoute.getDate());
+    }
+
+    @Test
+    void createRoute_DataAccessException_OnFileError() {
+        Route route = createTestRoute();
+        assertTrue(tempFile.setWritable(false));
+        assertThrows(DataAccessException.class, () -> routeDao.createRoute(route));
+        tempFile.setWritable(true);
+    }
+
+    @Test
+    void createRoute_NullInput_ShouldThrowException() {
+        assertThrows(IllegalArgumentException.class, () -> routeDao.createRoute(null));
+    }
+
+    @Test
+    void getRouteById_Success() throws DataAccessException {
+        Route route = createTestRoute();
+        String id = routeDao.createRoute(route);
+        Optional<Route> foundRoute = routeDao.getRouteById(id);
         assertTrue(foundRoute.isPresent());
-        assertEquals("Start Point", foundRoute.get().getStartPoint());
+        assertEquals(UUID.fromString(id), foundRoute.get().getId());
+        assertEquals(route.getStartingPoint(), foundRoute.get().getStartingPoint());
     }
 
     @Test
-    void testCreateRoute_Failure() {
-        // Создаем тестовый маршрут с некорректными данными (например, null)
-        RouteRecord routeRecord = new RouteRecord();
-        routeRecord.setStartPoint(null); // Некорректные данные
-        tempFile.setReadOnly();
-
-
-        // Проверяем, что создание маршрута выбрасывает исключение
-        assertThrows(DataAccessException.class, () -> routeDao.createRoute(routeRecord));
-    }
-
-    @Test
-    void testGetRouteById_Success() {
-        // Создаем тестовый маршрут
-        RouteRecord routeRecord = new RouteRecord();
-        routeRecord.setStartPoint("Start Point");
-        routeRecord.setEndPoint("End Point");
-        routeRecord.setDate(new Date());
-        routeRecord.setEstimatedDuration((short) 120);
-
-        // Создаем маршрут и получаем его ID
-        String routeId = routeDao.createRoute(routeRecord);
-
-        // Получаем маршрут по ID
-        Optional<RouteRecord> foundRoute = routeDao.getRouteById(routeId);
-        assertTrue(foundRoute.isPresent());
-        assertEquals(routeId, foundRoute.get().getId());
-    }
-
-    @Test
-    void testGetRouteById_NotFound() {
-        // Пытаемся получить несуществующий маршрут
-        Optional<RouteRecord> foundRoute = routeDao.getRouteById("non-existent-id");
+    void getRouteById_NotFound() throws DataAccessException {
+        String nonExistentId = UUID.randomUUID().toString();
+        Optional<Route> foundRoute = routeDao.getRouteById(nonExistentId);
         assertFalse(foundRoute.isPresent());
     }
 
     @Test
-    void testUpdateRoute_Success() {
-        // Создаем тестовый маршрут
-        RouteRecord routeRecord = new RouteRecord();
-        routeRecord.setStartPoint("Start Point");
-        routeRecord.setEndPoint("End Point");
-        routeRecord.setDate(new Date());
-        routeRecord.setEstimatedDuration((short) 120);
-
-        // Создаем маршрут и получаем его ID
-        String routeId = routeDao.createRoute(routeRecord);
-
-        // Обновляем маршрут
-        routeRecord.setEndPoint("Updated End Point");
-        routeDao.updateRoute(routeRecord);
-
-        // Проверяем, что маршрут был обновлен
-        Optional<RouteRecord> updatedRoute = routeDao.getRouteById(routeId);
-        assertTrue(updatedRoute.isPresent());
-        assertEquals("Updated End Point", updatedRoute.get().getEndPoint());
+    void getRouteById_DataAccessException_OnFileError() throws DataAccessException {
+        Route route = createTestRoute();
+        String id = routeDao.createRoute(route);
+        assertTrue(tempFile.delete());
+        assertThrows(IllegalArgumentException.class, () -> routeDao.getRouteById(id));
     }
 
     @Test
-    void testUpdateRoute_NotFound() {
-        // Пытаемся обновить несуществующий маршрут
-        RouteRecord routeRecord = new RouteRecord();
-        routeRecord.setId("non-existent-id");
-        routeRecord.setStartPoint("Start Point");
+    void updateRoute_Success() throws DataAccessException {
+        Route route = createTestRoute();
+        String id = routeDao.createRoute(route);
+        UUID routeUUID = UUID.fromString(id);
 
-        // Проверяем, что обновление выбрасывает исключение
-        assertThrows(DataAccessException.class, () -> routeDao.updateRoute(routeRecord));
+        Route createdRoute = routeDao.getRouteById(id).orElseThrow(() -> new AssertionError("Failed to retrieve route for update test"));
+
+        createdRoute.setEndingPoint("City C");
+        createdRoute.setEstimatedDuration((short) 150);
+        routeDao.updateRoute(createdRoute);
+
+        Optional<Route> updatedRouteOpt = routeDao.getRouteById(id);
+        assertTrue(updatedRouteOpt.isPresent());
+        Route updatedRoute = updatedRouteOpt.get();
+
+        assertEquals("City A", updatedRoute.getStartingPoint());
+        assertEquals("City C", updatedRoute.getEndingPoint());
+        assertEquals((short) 150, updatedRoute.getEstimatedDuration());
+        assertEquals(routeUUID, updatedRoute.getId());
     }
 
     @Test
-    void testDeleteRoute_Success() {
-        // Создаем тестовый маршрут
-        RouteRecord routeRecord = new RouteRecord();
-        routeRecord.setStartPoint("Start Point");
-        routeRecord.setEndPoint("End Point");
-        routeRecord.setDate(new Date());
-        routeRecord.setEstimatedDuration((short) 120);
-
-        // Создаем маршрут и получаем его ID
-        String routeId = routeDao.createRoute(routeRecord);
-
-        // Удаляем маршрут
-        routeDao.deleteRoute(routeId);
-
-        // Проверяем, что маршрут был удален
-        Optional<RouteRecord> deletedRoute = routeDao.getRouteById(routeId);
-        assertFalse(deletedRoute.isPresent());
+    void updateRoute_NotFound() {
+        Route nonExistentRoute = createTestRoute();
+        nonExistentRoute.setId(UUID.randomUUID());
+        assertThrows(DataAccessException.class, () -> routeDao.updateRoute(nonExistentRoute));
     }
 
     @Test
-    void testDeleteRoute_NotFound() {
-        // Пытаемся удалить несуществующий маршрут
-        assertThrows(DataAccessException.class, () -> routeDao.deleteRoute("non-existent-id"));
+    void updateRoute_NullInput_ShouldThrowException() {
+        assertThrows(IllegalArgumentException.class, () -> routeDao.updateRoute(null));
+    }
+
+    @Test
+    void deleteRoute_Success() throws DataAccessException {
+        Route route = createTestRoute();
+        String id = routeDao.createRoute(route);
+        assertTrue(routeDao.getRouteById(id).isPresent());
+        routeDao.deleteRoute(id);
+        assertFalse(routeDao.getRouteById(id).isPresent());
+    }
+
+    @Test
+    void deleteRoute_NotFound() {
+        String nonExistentId = UUID.randomUUID().toString();
+        assertDoesNotThrow(() -> routeDao.deleteRoute(nonExistentId));
+    }
+
+    @Test
+    void deleteRoute_DataAccessException_OnFileError() throws DataAccessException {
+        Route route = createTestRoute();
+        String id = routeDao.createRoute(route);
+        assertTrue(tempFile.setWritable(false));
+        assertThrows(DataAccessException.class, () -> routeDao.deleteRoute(id));
+        tempFile.setWritable(true);
     }
 }

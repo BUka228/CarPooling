@@ -1,213 +1,220 @@
 package dao.mongo;
 
 import com.carpooling.dao.mongo.MongoBookingDao;
-import com.carpooling.entities.record.BookingRecord;
-import com.carpooling.exceptions.dao.DataAccessException;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
-import com.mongodb.client.result.DeleteResult;
-import com.mongodb.client.result.UpdateResult;
-import dao.fake.FakeFindIterable;
+import com.mongodb.client.MongoDatabase;
+import de.flapdoodle.embed.mongo.MongodExecutable;
+import de.flapdoodle.embed.mongo.MongodProcess;
+import de.flapdoodle.embed.mongo.MongodStarter;
+import de.flapdoodle.embed.mongo.config.ImmutableMongodConfig;
+import de.flapdoodle.embed.mongo.config.MongodConfig;
+import de.flapdoodle.embed.mongo.distribution.Version;
+import de.flapdoodle.embed.process.runtime.Network;
 import org.bson.Document;
-import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.junit.jupiter.api.*;
 
 import java.util.Date;
 import java.util.Optional;
+import java.util.UUID; // Используется в Booking, но для Mongo ID будет ObjectId/String
 
-import static com.mongodb.client.model.Filters.eq;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS) // Чтобы @BeforeAll/@AfterAll не были static
 class MongoBookingDaoTest {
 
-    @Mock
+    private static final String DATABASE_NAME = "test_booking_db";
+    private static final String COLLECTION_NAME = "bookings";
+
+    private MongodExecutable mongodExecutable;
+    private MongodProcess mongodProcess;
+    private MongoClient mongoClient;
     private MongoCollection<Document> collection;
-
-    @Mock
-    private ObjectMapper objectMapper;
-
     private MongoBookingDao bookingDao;
+
+    @BeforeAll
+    void setUpAll() throws Exception {
+        MongodStarter starter = MongodStarter.getDefaultInstance();
+        String bindIp = "localhost";
+        int port = Network.getFreeServerPort(); // Найти свободный порт
+
+        ImmutableMongodConfig mongodConfig = MongodConfig.builder()
+                .version(Version.Main.V6_0) // Используйте нужную вам версию MongoDB
+                .net(new de.flapdoodle.embed.mongo.config.Net(bindIp, port, Network.localhostIsIPv6()))
+                .build();
+
+        this.mongodExecutable = starter.prepare(mongodConfig);
+        this.mongodProcess = mongodExecutable.start();
+        this.mongoClient = MongoClients.create("mongodb://" + bindIp + ":" + port);
+        MongoDatabase database = mongoClient.getDatabase(DATABASE_NAME);
+        this.collection = database.getCollection(COLLECTION_NAME);
+    }
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
+        // Очистка коллекции перед каждым тестом для изоляции
+        collection.drop();
+        // Создаем DAO с чистой коллекцией
         bookingDao = new MongoBookingDao(collection);
     }
 
-    @Test
-    void testCreateBooking_Success() throws JsonProcessingException {
-
-        BookingRecord bookingRecord = new BookingRecord();
-        bookingRecord.setTripId(new ObjectId().toHexString());
-        bookingRecord.setUserId(new ObjectId().toHexString());
-        bookingRecord.setSeatCount((byte) 2);
-        bookingRecord.setStatus("CONFIRMED");
-
-        Document document = new Document("_id", new ObjectId())
-                .append("tripId", new ObjectId(bookingRecord.getTripId()))
-                .append("userId", new ObjectId(bookingRecord.getUserId()))
-                .append("seatCount", bookingRecord.getSeatCount())
-                .append("status", bookingRecord.getStatus());
-
-        when(objectMapper.writeValueAsString(any())).thenReturn("{}");
-        when(collection.insertOne(any(Document.class))).thenAnswer(invocation -> {
-            Document doc = invocation.getArgument(0);
-            doc.put("_id", new ObjectId());
-            return null;
-        });
-
-        String bookingId = bookingDao.createBooking(bookingRecord);
-
-        assertNotNull(bookingId);
-        verify(collection, times(1)).insertOne(any(Document.class));
-    }
-
-    @Test
-    void testCreateBooking_Failure() throws JsonProcessingException {
-
-        BookingRecord bookingRecord = new BookingRecord();
-        bookingRecord.setTripId(new ObjectId().toHexString());
-        bookingRecord.setUserId(new ObjectId().toHexString());
-        bookingRecord.setSeatCount((byte) 2);
-        bookingRecord.setStatus("CONFIRMED");
-
-        when(objectMapper.writeValueAsString(any())).thenReturn("{}");
-        when(collection.insertOne(any(Document.class))).thenThrow(new RuntimeException("DB error"));
-
-        assertThrows(DataAccessException.class, () -> bookingDao.createBooking(bookingRecord));
-        verify(collection, times(1)).insertOne(any(Document.class));
-    }
-
-    @Test
-    void testGetBookingById_Success() throws JsonProcessingException {
-
-        String bookingId = new ObjectId().toHexString();
-        BookingRecord bookingRecord = new BookingRecord(
-                bookingId,
-                (byte) 2,
-                "CONFIRMED",
-                new Date(),
-                "A12345678",
-                new Date(),
-                new ObjectId().toHexString(),
-                new ObjectId().toHexString()
-        );
-
-        Document document = toDocument(bookingRecord);
-        document.put("_id", new ObjectId(bookingId));
-
-        when(collection.find(eq(new ObjectId(bookingId)))).thenReturn(new FakeFindIterable(document));
-
-        Optional<BookingRecord> booking = bookingDao.getBookingById(bookingId);
-
-        assertTrue(booking.isPresent());
-        verify(collection, times(1)).find(eq(new ObjectId(bookingId)));
-    }
-
-    @Test
-    void testGetBookingById_NotFound() {
-        String bookingId = new ObjectId().toHexString();
-
-        when(collection.find(eq(new ObjectId(bookingId)))).thenReturn(new FakeFindIterable(null));
-
-        Optional<BookingRecord> booking = bookingDao.getBookingById(bookingId);
-
-        assertFalse(booking.isPresent());
-        verify(collection, times(1)).find(eq(new ObjectId(bookingId)));
-    }
-
-    @Test
-    void testUpdateBooking_Success() throws JsonProcessingException {
-        BookingRecord bookingRecord = new BookingRecord(
-                new ObjectId().toHexString(),
-                (byte) 2,
-                "CONFIRMED",
-                new Date(),
-                "A12345678",
-                new Date(),
-                new ObjectId().toHexString(),
-                new ObjectId().toHexString()
-        );
-
-        when(objectMapper.writeValueAsString(any())).thenReturn("{}");
-        when(collection.updateOne((Bson) any(), (Bson) any())).thenReturn(UpdateResult.acknowledged(1L, 1L, null));
-
-        bookingDao.updateBooking(bookingRecord);
-
-        verify(collection, times(1)).updateOne((Bson) any(), (Bson) any());
-    }
-
-    @Test
-    void testUpdateBooking_Failure() throws JsonProcessingException {
-        BookingRecord bookingRecord = new BookingRecord(
-                new ObjectId().toHexString(),
-                (byte) 2,
-                "CONFIRMED",
-                new Date(),
-                "A12345678",
-                new Date(),
-                new ObjectId().toHexString(),
-                new ObjectId().toHexString()
-        );
-
-        when(objectMapper.writeValueAsString(any())).thenReturn("{}");
-        when(collection.updateOne((Bson) any(), (Bson) any())).thenThrow(new RuntimeException("DB error"));
-
-        assertThrows(DataAccessException.class, () -> bookingDao.updateBooking(bookingRecord));
-        verify(collection, times(1)).updateOne((Bson) any(), (Bson) any());
-    }
-
-    @Test
-    void testDeleteBooking_Success() {
-        String bookingId = new ObjectId().toHexString();
-
-        when(collection.deleteOne(eq(new ObjectId(bookingId)))).thenReturn(DeleteResult.acknowledged(1L));
-
-        bookingDao.deleteBooking(bookingId);
-
-        verify(collection, times(1)).deleteOne(eq(new ObjectId(bookingId)));
-    }
-
-    @Test
-    void testDeleteBooking_Failure() {
-        String bookingId = new ObjectId().toHexString();
-
-        when(collection.deleteOne(eq(new ObjectId(bookingId)))).thenThrow(new RuntimeException("DB error"));
-
-        assertThrows(DataAccessException.class, () -> bookingDao.deleteBooking(bookingId));
-        verify(collection, times(1)).deleteOne(eq(new ObjectId(bookingId)));
-    }
-
-    protected Document toDocument(Object object) {
-        ObjectMapper objectMapper = new ObjectMapper();
-        try {
-            String json = objectMapper.writeValueAsString(object);
-            Document document = Document.parse(json);
-            document.remove("id");
-            return document;
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Не удалось преобразовать объект в документ.", e);
+    @AfterAll
+    void tearDownAll() {
+        if (this.mongoClient != null) {
+            this.mongoClient.close();
+        }
+        if (this.mongodProcess != null) {
+            this.mongodProcess.stop();
+        }
+        if (this.mongodExecutable != null) {
+            this.mongodExecutable.stop();
         }
     }
 
-    protected <T> T fromDocument(Document document, Class<T> clazz) {
-        ObjectMapper objectMapper = new ObjectMapper();
-        try {
-            if (document.containsKey("_id")) {
-                document.put("id", document.getObjectId("_id").toHexString());
-                document.remove("_id");
-            }
-            String json = document.toJson();
-            return objectMapper.readValue(json, clazz);
-        } catch (Exception e) {
-            throw new IllegalStateException("Не удалось преобразовать документ в объект.", e);
-        }
+    // Вспомогательный метод для создания тестового Booking
+    private Booking createTestBooking() {
+        Booking booking = new Booking();
+        // Устанавливаем поля сущности
+        booking.setNumberOfSeats((byte) 2);
+        booking.setStatus("pending");
+        booking.setBookingDate(new Date());
+        booking.setPassportNumber("PN987654");
+        booking.setPassportExpiryDate(new Date(System.currentTimeMillis() + 31536000000L)); // +1 year
+        // Связанные сущности (Trip, User) в MongoDB обычно хранятся как ID или вложенные документы.
+        // В вашей сущности они @JsonIgnore/@XmlTransient, так что они не должны сохраняться напрямую.
+        // Если нужно хранить ID, добавьте соответствующие поля String/UUID в Booking.
+        // booking.setTripId(UUID.randomUUID().toString()); // Пример, если бы было поле tripId
+        // booking.setUserId(UUID.randomUUID().toString()); // Пример, если бы было поле userId
+        return booking;
+    }
+
+    @Test
+    void createBooking_Success() throws DataAccessException {
+        Booking booking = createTestBooking();
+        String id = bookingDao.createBooking(booking);
+
+        assertNotNull(id);
+        assertTrue(ObjectId.isValid(id), "Returned ID should be a valid ObjectId hex string");
+
+        // Проверка наличия документа в БД
+        Document savedDoc = collection.find(com.mongodb.client.model.Filters.eq("_id", new ObjectId(id))).first();
+        assertNotNull(savedDoc, "Booking document should exist in the database");
+        assertEquals("pending", savedDoc.getString("status"));
+        assertEquals(2, savedDoc.getInteger("numberOfSeats")); // MongoDB хранит byte как Integer
+        assertEquals("PN987654", savedDoc.getString("passportNumber"));
+
+        // Проверка через getBookingById
+        Optional<Booking> foundOpt = bookingDao.getBookingById(id);
+        assertTrue(foundOpt.isPresent());
+        Booking found = foundOpt.get();
+        assertEquals(id, found.getId()); // ID должен быть установлен в объекте
+        assertEquals(booking.getStatus(), found.getStatus());
+        assertEquals(booking.getNumberOfSeats(), found.getNumberOfSeats());
+        assertEquals(booking.getPassportNumber(), found.getPassportNumber());
+        assertNotNull(found.getBookingDate());
+        assertNotNull(found.getPassportExpiryDate());
+    }
+
+    @Test
+    void getBookingById_Success() throws DataAccessException {
+        Booking booking = createTestBooking();
+        String id = bookingDao.createBooking(booking);
+
+        Optional<Booking> foundOpt = bookingDao.getBookingById(id);
+
+        assertTrue(foundOpt.isPresent());
+        assertEquals(id, foundOpt.get().getId());
+        assertEquals("pending", foundOpt.get().getStatus());
+    }
+
+    @Test
+    void getBookingById_NotFound() throws DataAccessException {
+        String nonExistentId = new ObjectId().toHexString(); // Валидный, но несуществующий ID
+        Optional<Booking> foundOpt = bookingDao.getBookingById(nonExistentId);
+
+        assertFalse(foundOpt.isPresent());
+    }
+
+    @Test
+    void getBookingById_InvalidIdFormat_ShouldThrowException() {
+        String invalidId = "this-is-not-an-object-id";
+        // Ожидаем DataAccessException, так как new ObjectId(id) упадет с IllegalArgumentException
+        assertThrows(DataAccessException.class, () -> bookingDao.getBookingById(invalidId));
+    }
+
+    @Test
+    void updateBooking_Success() throws DataAccessException {
+        Booking booking = createTestBooking();
+        String id = bookingDao.createBooking(booking);
+        ObjectId objectId = new ObjectId(id);
+
+        // Получаем, модифицируем и обновляем
+        Booking toUpdate = bookingDao.getBookingById(id).orElseThrow();
+        toUpdate.setStatus("confirmed");
+        toUpdate.setNumberOfSeats((byte) 1);
+
+        // Важно: ID должен быть установлен в объекте toUpdate для метода updateBooking
+        // В AbstractMongoDao.fromDocument он устанавливается, так что все ок.
+
+        bookingDao.updateBooking(toUpdate);
+
+        // Проверяем напрямую в БД
+        Document updatedDoc = collection.find(com.mongodb.client.model.Filters.eq("_id", objectId)).first();
+        assertNotNull(updatedDoc);
+        assertEquals("confirmed", updatedDoc.getString("status"));
+        assertEquals(1, updatedDoc.getInteger("numberOfSeats")); // byte -> Integer
+
+        // Проверяем через getBookingById
+        Optional<Booking> foundOpt = bookingDao.getBookingById(id);
+        assertTrue(foundOpt.isPresent());
+        assertEquals("confirmed", foundOpt.get().getStatus());
+        assertEquals((byte) 1, foundOpt.get().getNumberOfSeats());
+    }
+
+    @Test
+    void updateBooking_NotFound() {
+        Booking booking = createTestBooking();
+        // НЕ создаем его в DAO
+        booking.setId(new ObjectId().toHexString()); // Устанавливаем несуществующий, но валидный ID
+
+        // Ожидаем исключение, так как updateOne не найдет документ
+        assertThrows(DataAccessException.class, () -> bookingDao.updateBooking(booking));
+    }
+
+    @Test
+    void deleteBooking_Success() throws DataAccessException {
+        Booking booking = createTestBooking();
+        String id = bookingDao.createBooking(booking);
+        ObjectId objectId = new ObjectId(id);
+
+        // Убедимся, что запись существует
+        assertEquals(1, collection.countDocuments(com.mongodb.client.model.Filters.eq("_id", objectId)));
+
+        bookingDao.deleteBooking(id);
+
+        // Убедимся, что запись удалена
+        assertEquals(0, collection.countDocuments(com.mongodb.client.model.Filters.eq("_id", objectId)));
+        Optional<Booking> foundOpt = bookingDao.getBookingById(id);
+        assertFalse(foundOpt.isPresent());
+    }
+
+    @Test
+    void deleteBooking_NotFound() {
+        String nonExistentId = new ObjectId().toHexString();
+
+        // Проверяем, что удаление несуществующего ID не вызывает исключение (согласно коду DAO)
+        assertDoesNotThrow(() -> bookingDao.deleteBooking(nonExistentId));
+
+        // Убедимся, что ничего не было удалено (если коллекция была пуста)
+        assertEquals(0, collection.countDocuments());
+    }
+
+    @Test
+    void deleteBooking_InvalidIdFormat_ShouldThrowException() {
+        String invalidId = "invalid-id";
+        // Ожидаем DataAccessException, так как new ObjectId(id) упадет
+        assertThrows(DataAccessException.class, () -> bookingDao.deleteBooking(invalidId));
     }
 }

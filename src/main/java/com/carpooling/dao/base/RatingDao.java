@@ -1,6 +1,6 @@
 package com.carpooling.dao.base;
 
-import com.carpooling.entities.record.RatingRecord;
+import com.carpooling.entities.database.Rating;
 import com.carpooling.exceptions.dao.DataAccessException;
 
 import java.util.Optional;
@@ -11,24 +11,24 @@ import java.util.Optional;
 public interface RatingDao {
     /**
      * Создает новый рейтинг.
-     * @param ratingRecord Объект рейтинга, содержащий информацию о рейтинге.
+     * @param rating Объект рейтинга, содержащий информацию о рейтинге.
      * @return ID созданного рейтинга.
      * @throws DataAccessException Если произошла ошибка при создании рейтинга.
      */
-    String createRating(RatingRecord ratingRecord) throws DataAccessException;
+    String createRating(Rating rating) throws DataAccessException;
     /**
      * Возвращает рейтинг по его ID.
      * @param id ID рейтинга.
      * @return Объект рейтинга.
      * @throws DataAccessException Если рейтинг не найден.
      */
-    Optional<RatingRecord> getRatingById(String id) throws DataAccessException;
+    Optional<Rating> getRatingById(String id) throws DataAccessException;
     /**
      * Обновляет существующий рейтинг.
-     * @param ratingRecord Объект рейтинга с обновленными данными.
+     * @param rating Объект рейтинга с обновленными данными.
      * @throws DataAccessException Если произошла ошибка при обновлении рейтинга.
      */
-    void updateRating(RatingRecord ratingRecord) throws DataAccessException;
+    void updateRating(Rating rating) throws DataAccessException;
     /**
      * Удаляет рейтинг по его ID.
      * @param id ID рейтинга.

@@ -1,7 +1,7 @@
 package com.carpooling.dao.xml;
 
 import com.carpooling.dao.base.BookingDao;
-import com.carpooling.entities.record.BookingRecord;
+import com.carpooling.entities.database.Booking;
 import com.carpooling.exceptions.dao.DataAccessException;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
@@ -14,105 +14,96 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.util.List;
 import java.util.Optional;
-
-import static com.carpooling.constants.ErrorMessages.BOOKING_CREATION_ERROR;
-import static com.carpooling.constants.ErrorMessages.BOOKING_UPDATE_ERROR;
-import static com.carpooling.constants.ErrorMessages.*;
-import static com.carpooling.constants.LogMessages.*;
-
-
+import java.util.UUID;
 
 @Slf4j
-public class XmlBookingDao extends AbstractXmlDao<BookingRecord, XmlBookingDao.BookingWrapper> implements BookingDao {
+public class XmlBookingDao extends AbstractXmlDao<Booking, XmlBookingDao.BookingWrapper> implements BookingDao {
 
     public XmlBookingDao(String filePath) {
-        super(BookingRecord.class, BookingWrapper.class, filePath);
+        super(Booking.class, BookingWrapper.class, filePath);
     }
 
     @Override
-    public String createBooking(@NotNull BookingRecord bookingRecord) throws DataAccessException {
-        log.info(CREATE_BOOKING_START, bookingRecord.getTripId(), bookingRecord.getUserId());
-
-        // Генерация UUID для ID
-        String bookingId = generateId();
-        bookingRecord.setId(bookingId);
-
+    public String createBooking(@NotNull Booking booking) throws DataAccessException {
         try {
-            List<BookingRecord> bookings = readAll();
-            bookings.add(bookingRecord);
+            UUID bookingId = generateId();
+            booking.setId(bookingId);
+            List<Booking> bookings = readAll();
+            bookings.add(booking);
             writeAll(bookings);
-
-            log.info(CREATE_BOOKING_SUCCESS, bookingId);
-            return bookingId;
+            log.info("Booking created successfully: {}", bookingId);
+            return bookingId.toString();
         } catch (JAXBException e) {
-            log.error(ERROR_CREATE_BOOKING, bookingRecord.getTripId(), bookingRecord.getUserId(), e);
-            throw new DataAccessException(BOOKING_CREATION_ERROR, e);
+            log.error("Error creating booking: {}", e.getMessage());
+            throw new DataAccessException("Error creating booking", e);
         }
     }
 
     @Override
-    public Optional<BookingRecord> getBookingById(String id) throws DataAccessException {
-        log.info(GET_BOOKING_START, id);
+    public Optional<Booking> getBookingById(String id) throws DataAccessException {
         try {
-            return findById(record -> record.getId().equals(id));
-        } catch (JAXBException e) {
-            log.error(ERROR_GET_BOOKING, id, e);
-            throw new DataAccessException(String.format(BOOKING_NOT_FOUND_ERROR, id), e);
-        }
-    }
-
-    @Override
-    public void updateBooking(BookingRecord bookingRecord) throws DataAccessException {
-        try {
-            List<BookingRecord> bookings = readAll();
-            boolean updated = updateItem(bookings, record -> record.getId().equals(bookingRecord.getId()), bookingRecord);
-
-            if (!updated) {
-                log.warn(WARN_BOOKING_NOT_FOUND, bookingRecord.getId());
-                throw new DataAccessException(String.format(BOOKING_NOT_FOUND_ERROR, bookingRecord.getId()));
+            Optional<Booking> booking = findById(record -> record.getId().toString().equals(id));
+            if (booking.isPresent()) {
+                log.info("Booking found: {}", id);
+            } else {
+                log.warn("Booking not found: {}", id);
             }
-
-            writeAll(bookings);
-            log.info(UPDATE_BOOKING_SUCCESS, bookingRecord.getId());
+            return booking;
         } catch (JAXBException e) {
-            log.error(ERROR_UPDATE_BOOKING, bookingRecord.getId(), e);
-            throw new DataAccessException(BOOKING_UPDATE_ERROR, e);
+            log.error("Error reading booking: {}", e.getMessage());
+            throw new DataAccessException("Error reading booking", e);
+        }
+    }
+
+    @Override
+    public void updateBooking(@NotNull Booking booking) throws DataAccessException {
+        try {
+            boolean updated = updateItem( record -> record.getId().equals(booking.getId()), booking);
+            if (!updated) {
+                log.warn("Booking not found for update: {}", booking.getId());
+                throw new DataAccessException("Booking not found");
+            }
+            log.info("Booking updated successfully: {}", booking.getId());
+        } catch (JAXBException e) {
+            log.error("Error updating booking: {}", e.getMessage());
+            throw new DataAccessException("Error updating booking", e);
         }
     }
 
     @Override
     public void deleteBooking(String id) throws DataAccessException {
         try {
-            deleteById(record -> record.getId().equals(id));
-            log.info(DELETE_BOOKING_SUCCESS, id);
+            boolean removed = deleteById(record -> record.getId().toString().equals(id));
+            if (removed) {
+                log.info("Booking deleted successfully: {}", id);
+            } else {
+                log.warn("Booking not found for deletion: {}", id);
+            }
         } catch (JAXBException e) {
-            log.error(ERROR_DELETE_BOOKING, id, e);
-            throw new DataAccessException(BOOKING_DELETE_ERROR, e);
+            log.error("Error deleting booking: {}", e.getMessage());
+            throw new DataAccessException("Error deleting booking", e);
         }
     }
 
     @Override
-    protected List<BookingRecord> getItemsFromWrapper(@NotNull BookingWrapper wrapper) {
+    protected List<Booking> getItemsFromWrapper(@NotNull BookingWrapper wrapper) {
         return wrapper.getBookings();
     }
 
     @Override
-    protected BookingWrapper createWrapper(List<BookingRecord> items) {
+    protected BookingWrapper createWrapper(List<Booking> items) {
         return new BookingWrapper(items);
     }
 
-    /**
-     * Вспомогательный класс для обертки списка бронирований в XML.
-     */
     @Setter
     @AllArgsConstructor
     @NoArgsConstructor
     @XmlRootElement(name = "bookings")
     protected static class BookingWrapper {
-        private List<BookingRecord> bookings;
+        private List<Booking> bookings;
 
         @XmlElement(name = "booking")
-        public List<BookingRecord> getBookings() {
+        public List<Booking> getBookings() {
             return bookings;
         }
     }

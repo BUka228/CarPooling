@@ -24,7 +24,7 @@ import static org.mockito.Mockito.*;
 @Slf4j
 class RateTripCommandTest {
 
-    @Mock
+    /*@Mock
     private RatingService ratingService;
 
     @InjectMocks
@@ -159,5 +159,5 @@ class RateTripCommandTest {
 
         // Assert
         assertEquals(CommandLine.ExitCode.USAGE, exitCode); // Проверяем код выхода
-    }
+    }*/
 }

@@ -2,137 +2,99 @@ package com.carpooling.dao.postgres;
 
 
 import com.carpooling.dao.base.BookingDao;
-import com.carpooling.entities.record.BookingRecord;
+import com.carpooling.entities.database.Booking;
 import com.carpooling.exceptions.dao.DataAccessException;
+import com.carpooling.utils.HibernateUtil;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
 import org.jetbrains.annotations.NotNull;
 
-import java.sql.*;
 import java.util.Optional;
+import java.util.UUID;
 
-import static com.carpooling.constants.Constants.*;
-import static com.carpooling.constants.ErrorMessages.BOOKING_CREATION_ERROR;
-import static com.carpooling.constants.ErrorMessages.BOOKING_UPDATE_ERROR;
-import static com.carpooling.constants.ErrorMessages.*;
-import static com.carpooling.constants.LogMessages.*;
-import static com.carpooling.constants.Constants.*;
+import org.hibernate.HibernateException;
 
 @Slf4j
-public class PostgresBookingDao extends AbstractPostgresDao implements BookingDao {
-
-    public PostgresBookingDao(Connection connection) {
-        super(connection);
-    }
+@AllArgsConstructor
+public class PostgresBookingDao implements BookingDao {
+    
+    private final SessionFactory sessionFactory;
 
     @Override
-    public String createBooking(@NotNull BookingRecord bookingRecord) throws DataAccessException {
-        String bookingId = generateId();
-        log.info(CREATE_BOOKING_START, bookingRecord.getTripId(), bookingRecord.getUserId());
-
-        try (PreparedStatement statement = connection.prepareStatement(CREATE_BOOKING_SQL)) {
-            statement.setObject(1, stringToUUID(bookingId));
-            statement.setByte(2, bookingRecord.getSeatCount());
-            statement.setString(3, bookingRecord.getStatus());
-            statement.setTimestamp(4, new Timestamp(bookingRecord.getBookingDate().getTime()));
-            statement.setString(5, bookingRecord.getPassportNumber());
-            statement.setTimestamp(6, new Timestamp(bookingRecord.getPassportExpiryDate().getTime()));
-            statement.setObject(7, stringToUUID(bookingRecord.getTripId()));
-            statement.setObject(8, stringToUUID(bookingRecord.getUserId()));
-
-
-            int rowsInserted = statement.executeUpdate();
-            if (rowsInserted > 0) {
-                log.info(CREATE_BOOKING_SUCCESS, bookingId);
-                return bookingId;
-            } else {
-                log.error(ERROR_CREATE_BOOKING, bookingRecord.getTripId(), bookingRecord.getUserId());
-                throw new DataAccessException(BOOKING_CREATION_ERROR);
-            }
-        } catch (SQLException e) {
-            log.error(ERROR_CREATE_BOOKING, bookingRecord.getTripId(), bookingRecord.getUserId(), e);
-            throw new DataAccessException(BOOKING_CREATION_ERROR, e);
+    public String createBooking(Booking booking) throws DataAccessException {
+        Transaction transaction = null;
+        try (Session session = sessionFactory.openSession()) {
+            transaction = session.beginTransaction();
+            session.persist(booking);
+            transaction.commit();
+            log.info("Booking created successfully: {}", booking.getId());
+            return booking.getId().toString();
+        } catch (HibernateException e) {
+            if (transaction != null) transaction.rollback();
+            log.error("Error creating booking: {}", e.getMessage());
+            throw new DataAccessException("Error creating booking", e);
         }
     }
 
     @Override
-    public Optional<BookingRecord> getBookingById(String id) throws DataAccessException {
-        log.info(GET_BOOKING_START, id);
-
-        try (PreparedStatement statement = connection.prepareStatement(GET_BOOKING_BY_ID_SQL)) {
-            statement.setObject(1, stringToUUID(id));
-
-            ResultSet resultSet = statement.executeQuery();
-            if (resultSet.next()) {
-                return Optional.of(mapToBooking(resultSet));
+    public Optional<Booking> getBookingById(String id) throws DataAccessException {
+        try (Session session = sessionFactory.openSession()) {
+            UUID uuid = UUID.fromString(id);
+            Booking booking = session.get(Booking.class, uuid);
+            if (booking != null) {
+                log.info("Booking found: {}", id);
             } else {
-                log.warn(WARN_BOOKING_NOT_FOUND, id);
-                return Optional.empty();
+                log.warn("Booking not found: {}", id);
             }
-        } catch (SQLException e) {
-            log.error(ERROR_GET_BOOKING, id, e);
-            throw new DataAccessException(String.format(BOOKING_NOT_FOUND_ERROR, id), e);
+            return Optional.ofNullable(booking);
+        } catch (HibernateException e) {
+            log.error("Error reading booking: {}", e.getMessage());
+            throw new DataAccessException("Error reading booking", e);
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid UUID format: {}", id);
+            throw new DataAccessException("Invalid UUID format", e);
         }
     }
 
     @Override
-    public void updateBooking(@NotNull BookingRecord bookingRecord) throws DataAccessException {
-        log.info(UPDATE_BOOKING_SUCCESS, bookingRecord.getId());
-
-        try (PreparedStatement statement = connection.prepareStatement(UPDATE_BOOKING_SQL)) {
-            statement.setByte(1, bookingRecord.getSeatCount());
-            statement.setString(2, bookingRecord.getStatus());
-            statement.setTimestamp(3, new Timestamp(bookingRecord.getBookingDate().getTime()));
-            statement.setString(4, bookingRecord.getPassportNumber());
-            statement.setTimestamp(5, new Timestamp(bookingRecord.getPassportExpiryDate().getTime()));
-            statement.setObject(6, stringToUUID(bookingRecord.getTripId()));
-            statement.setObject(7, stringToUUID(bookingRecord.getUserId()));
-            statement.setObject(8, stringToUUID(bookingRecord.getId()));
-
-            int rowsUpdated = statement.executeUpdate();
-            if (rowsUpdated > 0) {
-                log.info(UPDATE_BOOKING_SUCCESS, bookingRecord.getId());
-            } else {
-                log.warn(WARN_BOOKING_NOT_FOUND, bookingRecord.getId());
-                throw new DataAccessException(String.format(BOOKING_NOT_FOUND_ERROR, bookingRecord.getId()));
-            }
-        } catch (SQLException e) {
-            log.error(ERROR_UPDATE_BOOKING, bookingRecord.getId(), e);
-            throw new DataAccessException(BOOKING_UPDATE_ERROR, e);
+    public void updateBooking(Booking booking) throws DataAccessException {
+        Transaction transaction = null;
+        try (Session session = sessionFactory.openSession()) {
+            transaction = session.beginTransaction();
+            session.merge(booking);
+            transaction.commit();
+            log.info("Booking updated successfully: {}", booking.getId());
+        } catch (HibernateException e) {
+            if (transaction != null) transaction.rollback();
+            log.error("Error updating booking: {}", e.getMessage());
+            throw new DataAccessException("Error updating booking", e);
         }
     }
 
     @Override
     public void deleteBooking(String id) throws DataAccessException {
-        log.info(DELETE_BOOKING_SUCCESS, id);
-
-        try (PreparedStatement statement = connection.prepareStatement(DELETE_BOOKING_SQL)) {
-            statement.setObject(1, stringToUUID(id));
-
-            int rowsDeleted = statement.executeUpdate();
-            if (rowsDeleted > 0) {
-                log.info(DELETE_BOOKING_SUCCESS, id);
+        Transaction transaction = null;
+        try (Session session = sessionFactory.openSession()) {
+            transaction = session.beginTransaction();
+            UUID uuid = UUID.fromString(id);
+            Booking booking = session.get(Booking.class, uuid);
+            if (booking != null) {
+                session.remove(booking);
+                transaction.commit();
+                log.info("Booking deleted successfully: {}", id);
             } else {
-                log.warn(WARN_BOOKING_NOT_FOUND, id);
-                throw new DataAccessException(String.format(BOOKING_NOT_FOUND_ERROR, id));
+                log.warn("Booking not found for deletion: {}", id);
             }
-        } catch (SQLException e) {
-            log.error(ERROR_DELETE_BOOKING, id, e);
-            throw new DataAccessException(BOOKING_DELETE_ERROR, e);
+        } catch (HibernateException e) {
+            if (transaction != null) transaction.rollback();
+            log.error("Error deleting booking: {}", e.getMessage());
+            throw new DataAccessException("Error deleting booking", e);
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid UUID format: {}", id);
+            throw new DataAccessException("Invalid UUID format", e);
         }
     }
-
-    @NotNull
-    private BookingRecord mapToBooking(@NotNull ResultSet resultSet) throws SQLException {
-        return new BookingRecord(
-                resultSet.getString("id"),
-                resultSet.getByte("seat_count"),
-                resultSet.getString("status"),
-                resultSet.getTimestamp("booking_date"),
-                resultSet.getString("passport_number"),
-                resultSet.getTimestamp("passport_expiry_date"),
-                resultSet.getString("trip_id"),
-                resultSet.getString("user_id")
-        );
-    }
 }
-

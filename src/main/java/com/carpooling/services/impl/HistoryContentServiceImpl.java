@@ -5,6 +5,7 @@ import com.carpooling.entities.history.HistoryContent;
 import com.carpooling.entities.history.Status;
 import com.carpooling.exceptions.service.HistoryContentServiceException;
 import com.carpooling.services.base.HistoryContentService;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
@@ -14,13 +15,11 @@ import java.util.List;
 import java.util.Optional;
 
 @Slf4j
+@AllArgsConstructor
 public class HistoryContentServiceImpl implements HistoryContentService {
 
     private final HistoryContentDao historyContentDao;
 
-    public HistoryContentServiceImpl(HistoryContentDao historyContentDao) {
-        this.historyContentDao = historyContentDao;
-    }
 
     @Override
     public String createHistoryContent(HistoryContent historyContent) throws HistoryContentServiceException {

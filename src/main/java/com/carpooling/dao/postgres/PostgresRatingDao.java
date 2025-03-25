@@ -1,120 +1,99 @@
 package com.carpooling.dao.postgres;
 
 import com.carpooling.dao.base.RatingDao;
-import com.carpooling.entities.record.RatingRecord;
+import com.carpooling.entities.database.Rating;
 import com.carpooling.exceptions.dao.DataAccessException;
+import com.carpooling.utils.HibernateUtil;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
 import org.jetbrains.annotations.NotNull;
 
-import java.sql.*;
 import java.util.Optional;
+import java.util.UUID;
+import org.hibernate.HibernateException;
 
-import static com.carpooling.constants.ErrorMessages.RATING_CREATION_ERROR;
-import static com.carpooling.constants.ErrorMessages.RATING_UPDATE_ERROR;
-import static com.carpooling.constants.ErrorMessages.*;
-import static com.carpooling.constants.LogMessages.*;
-import static com.carpooling.constants.Constants.*;
 
 @Slf4j
-public class PostgresRatingDao extends AbstractPostgresDao implements RatingDao {
+@AllArgsConstructor
+public class PostgresRatingDao implements RatingDao {
 
-    public PostgresRatingDao(Connection connection) {
-        super(connection);
-    }
+    private final SessionFactory sessionFactory;
 
     @Override
-    public String createRating(@NotNull RatingRecord ratingRecord) throws DataAccessException {
-        String ratingId = generateId();
-
-        try (PreparedStatement statement = connection.prepareStatement(CREATE_RATING_SQL)) {
-            statement.setObject(1, stringToUUID(ratingId));
-            statement.setInt(2, ratingRecord.getRating());
-            statement.setString(3, ratingRecord.getComment());
-            statement.setTimestamp(4, new Timestamp(ratingRecord.getDate().getTime()));
-            statement.setObject(5, stringToUUID(ratingRecord.getTripId()));
-
-
-            int rowsInserted = statement.executeUpdate();
-            if (rowsInserted > 0) {
-                log.info(CREATE_RATING_SUCCESS, ratingId);
-                return ratingId;
-            } else {
-                log.error(ERROR_CREATE_RATING, ratingRecord.getTripId());
-                throw new DataAccessException(RATING_CREATION_ERROR);
-            }
-        } catch (SQLException e) {
-            log.error(ERROR_CREATE_RATING, ratingRecord.getTripId(), e);
-            throw new DataAccessException(RATING_CREATION_ERROR, e);
+    public String createRating(Rating rating) throws DataAccessException {
+        Transaction transaction = null;
+        try (Session session = sessionFactory.openSession()) {
+            transaction = session.beginTransaction();
+            session.persist(rating);
+            transaction.commit();
+            log.info("Rating created successfully: {}", rating.getId());
+            return rating.getId().toString();
+        } catch (HibernateException e) {
+            if (transaction != null) transaction.rollback();
+            log.error("Error creating rating: {}", e.getMessage());
+            throw new DataAccessException("Error creating rating", e);
         }
     }
 
     @Override
-    public Optional<RatingRecord> getRatingById(String id) throws DataAccessException {
-        try (PreparedStatement statement = connection.prepareStatement(GET_RATING_BY_ID_SQL)) {
-            statement.setObject(1, stringToUUID(id));
-
-            ResultSet resultSet = statement.executeQuery();
-            if (resultSet.next()) {
-                log.info(GET_RATING_START, id);
-                return Optional.of(mapToRating(resultSet));
+    public Optional<Rating> getRatingById(String id) throws DataAccessException {
+        try (Session session = sessionFactory.openSession()) {
+            UUID uuid = UUID.fromString(id);
+            Rating rating = session.get(Rating.class, uuid);
+            if (rating != null) {
+                log.info("Rating found: {}", id);
             } else {
-                log.warn(WARN_RATING_NOT_FOUND, id);
-                return Optional.empty();
+                log.warn("Rating not found: {}", id);
             }
-        } catch (SQLException e) {
-            log.error(ERROR_GET_RATING, id, e);
-            throw new DataAccessException(String.format(RATING_NOT_FOUND_ERROR, id), e);
+            return Optional.ofNullable(rating);
+        } catch (HibernateException e) {
+            log.error("Error reading rating: {}", e.getMessage());
+            throw new DataAccessException("Error reading rating", e);
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid UUID format: {}", id);
+            throw new DataAccessException("Invalid UUID format", e);
         }
     }
 
     @Override
-    public void updateRating(@NotNull RatingRecord ratingRecord) throws DataAccessException {
-        try (PreparedStatement statement = connection.prepareStatement(UPDATE_RATING_SQL)) {
-            statement.setInt(1, ratingRecord.getRating());
-            statement.setString(2, ratingRecord.getComment());
-            statement.setTimestamp(3, new Timestamp(ratingRecord.getDate().getTime()));
-            statement.setObject(4, stringToUUID(ratingRecord.getTripId()));
-            statement.setObject(5, stringToUUID(ratingRecord.getId()));
-
-            int rowsUpdated = statement.executeUpdate();
-            if (rowsUpdated > 0) {
-                log.info(UPDATE_RATING_SUCCESS, ratingRecord.getId());
-            } else {
-                log.warn(WARN_RATING_NOT_FOUND, ratingRecord.getId());
-                throw new DataAccessException(String.format(RATING_NOT_FOUND_ERROR, ratingRecord.getId()));
-            }
-        } catch (SQLException e) {
-            log.error(ERROR_UPDATE_RATING, ratingRecord.getId(), e);
-            throw new DataAccessException(RATING_UPDATE_ERROR, e);
+    public void updateRating(Rating rating) throws DataAccessException {
+        Transaction transaction = null;
+        try (Session session = sessionFactory.openSession()) {
+            transaction = session.beginTransaction();
+            session.merge(rating);
+            transaction.commit();
+            log.info("Rating updated successfully: {}", rating.getId());
+        } catch (HibernateException e) {
+            if (transaction != null) transaction.rollback();
+            log.error("Error updating rating: {}", e.getMessage());
+            throw new DataAccessException("Error updating rating", e);
         }
     }
 
     @Override
     public void deleteRating(String id) throws DataAccessException {
-        try (PreparedStatement statement = connection.prepareStatement(DELETE_RATING_SQL)) {
-            statement.setObject(1, stringToUUID(id));
-
-            int rowsDeleted = statement.executeUpdate();
-            if (rowsDeleted > 0) {
-                log.info(DELETE_RATING_SUCCESS, id);
+        Transaction transaction = null;
+        try (Session session = sessionFactory.openSession()) {
+            transaction = session.beginTransaction();
+            UUID uuid = UUID.fromString(id);
+            Rating rating = session.get(Rating.class, uuid);
+            if (rating != null) {
+                session.remove(rating);
+                transaction.commit();
+                log.info("Rating deleted successfully: {}", id);
             } else {
-                log.warn(WARN_RATING_NOT_FOUND, id);
-                throw new DataAccessException(String.format(RATING_NOT_FOUND_ERROR, id));
+                log.warn("Rating not found for deletion: {}", id);
             }
-        } catch (SQLException e) {
-            log.error(ERROR_DELETE_RATING, id, e);
-            throw new DataAccessException(RATING_DELETE_ERROR, e);
+        } catch (HibernateException e) {
+            if (transaction != null) transaction.rollback();
+            log.error("Error deleting rating: {}", e.getMessage());
+            throw new DataAccessException("Error deleting rating", e);
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid UUID format: {}", id);
+            throw new DataAccessException("Invalid UUID format", e);
         }
-    }
-
-    @NotNull
-    private RatingRecord mapToRating(@NotNull ResultSet resultSet) throws SQLException {
-        return new RatingRecord(
-                resultSet.getString("id"),
-                resultSet.getInt("rating"),
-                resultSet.getString("comment"),
-                resultSet.getTimestamp("date"),
-                resultSet.getString("trip_id")
-        );
     }
 }

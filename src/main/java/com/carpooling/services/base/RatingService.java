@@ -1,6 +1,7 @@
 package com.carpooling.services.base;
 
 import com.carpooling.entities.database.Rating;
+import com.carpooling.entities.database.Trip;
 import com.carpooling.exceptions.service.RatingServiceException;
 
 import java.util.List;
@@ -16,11 +17,10 @@ public interface RatingService {
      * Создание новой оценки.
      *
      * @param rating Оценка для создания.
-     * @param tripId ID поездки, к которой относится оценка.
      * @return ID созданной оценки.
      * @throws RatingServiceException Если произошла ошибка при создании.
      */
-    String createRating(Rating rating, String tripId) throws RatingServiceException;
+    String createRating(Rating rating) throws RatingServiceException;
 
     /**
      * Получение оценки по ID.
@@ -43,10 +43,9 @@ public interface RatingService {
      * Обновление данных оценки.
      *
      * @param rating Оценка с обновленными данными.
-     * @param tripId ID поездки, к которой относится оценка.
      * @throws RatingServiceException Если произошла ошибка при обновлении.
      */
-    void updateRating(Rating rating, String tripId) throws RatingServiceException;
+    void updateRating(Rating rating) throws RatingServiceException;
 
     /**
      * Удаление оценки по ID.

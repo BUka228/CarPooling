@@ -1,10 +1,11 @@
 package com.carpooling.dao.mongo;
 
 import com.carpooling.dao.base.TripDao;
-import com.carpooling.entities.record.TripRecord;
+import com.carpooling.entities.database.Trip;
 import com.carpooling.exceptions.dao.DataAccessException;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
@@ -12,88 +13,78 @@ import org.bson.types.ObjectId;
 
 import java.util.Optional;
 
-import static com.carpooling.constants.Constants.*;
-import static com.carpooling.constants.ErrorMessages.TRIP_CREATION_ERROR;
-import static com.carpooling.constants.ErrorMessages.TRIP_UPDATE_ERROR;
-import static com.carpooling.constants.ErrorMessages.*;
-import static com.carpooling.constants.LogMessages.*;
-
 @Slf4j
-public class MongoTripDao extends AbstractMongoDao<TripRecord> implements TripDao {
+public class MongoTripDao extends AbstractMongoDao<Trip> implements TripDao {
 
     public MongoTripDao(MongoCollection<Document> collection) {
-        super(collection, TripRecord.class);
+        super(collection, Trip.class);
     }
 
     @Override
-    public String createTrip(TripRecord tripRecord) throws DataAccessException {
+    public String createTrip(Trip trip) throws DataAccessException {
         try {
-            Document document = toDocument(tripRecord);
-            document.put(USER_ID, new ObjectId(tripRecord.getUserId()));
-            document.put(ROUTE_ID, new ObjectId(tripRecord.getRouteId()));
+            Document document = toDocument(trip);
             collection.insertOne(document);
-            ObjectId generatedId = document.getObjectId(MONGO_ID);
+
+            ObjectId generatedId = document.getObjectId("_id");
             String id = generatedId.toHexString();
-            log.info(CREATE_TRIP_SUCCESS, id);
+            log.info("Trip created successfully: {}", id);
             return id;
         } catch (Exception e) {
-            log.error(ERROR_CREATE_TRIP, tripRecord, e);
-            throw new DataAccessException(TRIP_CREATION_ERROR, e);
+            log.error("Error creating trip: {}", e.getMessage());
+            throw new DataAccessException("Error creating trip", e);
         }
     }
 
     @Override
-    public Optional<TripRecord> getTripById(String id) throws DataAccessException{
+    public Optional<Trip> getTripById(String id) throws DataAccessException {
         try {
             ObjectId objectId = new ObjectId(id);
-            Document result = collection.find(Filters.eq(MONGO_ID, objectId)).first();
+            Document result = collection.find(Filters.eq("_id", objectId)).first();
             if (result != null) {
-                TripRecord tripRecord = fromDocument(result);
-                log.info(GET_TRIP_START, id);
-                return Optional.of(tripRecord);
+                Trip trip = fromDocument(result);
+                log.info("Trip found: {}", id);
+                return Optional.of(trip);
             } else {
-                log.warn(WARN_TRIP_NOT_FOUND, id);
+                log.warn("Trip not found: {}", id);
                 return Optional.empty();
             }
         } catch (Exception e) {
-            log.error(ERROR_GET_TRIP, id, e);
-            throw new DataAccessException(String.format(TRIP_NOT_FOUND_ERROR, id), e);
+            log.error("Error reading trip: {}", e.getMessage());
+            throw new DataAccessException("Error reading trip", e);
         }
     }
 
     @Override
-    public void updateTrip(TripRecord tripRecord) throws DataAccessException {
+    public void updateTrip(Trip trip) throws DataAccessException {
         try {
-            ObjectId objectId = new ObjectId(tripRecord.getId());
-            Document update = toDocument(tripRecord);
-            update.put(MONGO_ID, objectId);
-            update.put(USER_ID, new ObjectId(tripRecord.getUserId()));
-            update.put(ROUTE_ID, new ObjectId(tripRecord.getRouteId()));
-
-            // Выполняем обновление и проверяем количество обновленных записей
-            UpdateResult updateResult = collection.updateOne(Filters.eq("_id", objectId), new Document("$set", update));
-
-            if (updateResult.getModifiedCount() == 0) {
-                log.warn(WARN_TRIP_NOT_FOUND, tripRecord.getId());
-                throw new DataAccessException(String.format(TRIP_NOT_FOUND_ERROR, tripRecord.getId()));
+            ObjectId objectId = new ObjectId(trip.getId().toString());
+            Document update = toDocument(trip);
+            UpdateResult result = collection.updateOne(Filters.eq("_id", objectId), new Document("$set", update));
+            if (result.getModifiedCount() == 0) {
+                log.warn("Trip not found for update: {}", trip.getId());
+                throw new DataAccessException("Trip not found");
             }
-            log.info(UPDATE_TRIP_SUCCESS, tripRecord.getId());
+            log.info("Trip updated successfully: {}", trip.getId());
         } catch (Exception e) {
-            log.error(ERROR_UPDATE_TRIP, tripRecord.getId(), e);
-            throw new DataAccessException(TRIP_UPDATE_ERROR, e);
+            log.error("Error updating trip: {}", e.getMessage());
+            throw new DataAccessException("Error updating trip", e);
         }
     }
 
     @Override
-    public void deleteTrip(String id) throws DataAccessException{
+    public void deleteTrip(String id) throws DataAccessException {
         try {
             ObjectId objectId = new ObjectId(id);
-            collection.deleteOne(Filters.eq(MONGO_ID, objectId));
-            log.info(DELETE_TRIP_SUCCESS, id);
+            DeleteResult result = collection.deleteOne(Filters.eq("_id", objectId));
+            if (result.getDeletedCount() > 0) {
+                log.info("Trip deleted successfully: {}", id);
+            } else {
+                log.warn("Trip not found for deletion: {}", id);
+            }
         } catch (Exception e) {
-            log.error(ERROR_DELETE_TRIP, id, e);
-            throw new DataAccessException(TRIP_DELETE_ERROR, e);
+            log.error("Error deleting trip: {}", e.getMessage());
+            throw new DataAccessException("Error deleting trip", e);
         }
     }
 }
-

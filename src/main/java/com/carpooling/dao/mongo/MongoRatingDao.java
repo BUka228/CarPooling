@@ -1,87 +1,75 @@
 package com.carpooling.dao.mongo;
 
 import com.carpooling.dao.base.RatingDao;
-import com.carpooling.entities.record.RatingRecord;
+import com.carpooling.entities.database.Rating;
 import com.carpooling.exceptions.dao.DataAccessException;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.result.DeleteResult;
+import com.mongodb.client.result.UpdateResult;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 
 import java.util.Optional;
 
-import static com.carpooling.constants.Constants.MONGO_ID;
-import static com.carpooling.constants.Constants.TRIP_ID;
-import static com.carpooling.constants.ErrorMessages.RATING_CREATION_ERROR;
-import static com.carpooling.constants.ErrorMessages.RATING_UPDATE_ERROR;
-import static com.carpooling.constants.ErrorMessages.*;
-import static com.carpooling.constants.LogMessages.*;
 
 @Slf4j
-public class MongoRatingDao extends AbstractMongoDao<RatingRecord> implements RatingDao {
-
-    
+public class MongoRatingDao extends AbstractMongoDao<Rating> implements RatingDao {
 
     public MongoRatingDao(MongoCollection<Document> collection) {
-        super(collection, RatingRecord.class);
+        super(collection, Rating.class);
     }
 
     @Override
-    public String createRating(RatingRecord ratingRecord) throws DataAccessException {
+    public String createRating(Rating rating) throws DataAccessException {
         try {
-            // Преобразуем объект Rating в документ для MongoDB
-            Document document = toDocument(ratingRecord);
-            document.put(TRIP_ID, new ObjectId(ratingRecord.getTripId()));
+            Document document = toDocument(rating);
             collection.insertOne(document);
 
-            // Получаем сгенерированный ObjectId и возвращаем его как строку
-            ObjectId generatedId = document.getObjectId(MONGO_ID);
+            ObjectId generatedId = document.getObjectId("_id");
             String id = generatedId.toHexString();
-
-            log.info(CREATE_RATING_SUCCESS, id);
+            log.info("Rating created successfully: {}", id);
             return id;
         } catch (Exception e) {
-            log.error(ERROR_CREATE_RATING, ratingRecord, e);
-            throw new DataAccessException(RATING_CREATION_ERROR, e);
+            log.error("Error creating rating: {}", e.getMessage());
+            throw new DataAccessException("Error creating rating", e);
         }
     }
 
     @Override
-    public Optional<RatingRecord> getRatingById(String id) throws DataAccessException {
+    public Optional<Rating> getRatingById(String id) throws DataAccessException {
         try {
             ObjectId objectId = new ObjectId(id);
-            Document result = collection.find(Filters.eq(MONGO_ID, objectId)).first();
-
+            Document result = collection.find(Filters.eq("_id", objectId)).first();
             if (result != null) {
-                result.remove(TRIP_ID);
-                // Преобразуем документ обратно в объект RatingRecord
-                RatingRecord ratingRecord = fromDocument(result);
-                log.info(GET_RATING_START, id);
-                return Optional.of(ratingRecord);
+                Rating rating = fromDocument(result);
+                log.info("Rating found: {}", id);
+                return Optional.of(rating);
             } else {
-                log.warn(WARN_RATING_NOT_FOUND, id);
+                log.warn("Rating not found: {}", id);
                 return Optional.empty();
             }
         } catch (Exception e) {
-            log.error(ERROR_GET_RATING, id, e);
-            throw new DataAccessException(RATING_NOT_FOUND_ERROR, e);
+            log.error("Error reading rating: {}", e.getMessage());
+            throw new DataAccessException("Error reading rating", e);
         }
     }
 
     @Override
-    public void updateRating(RatingRecord ratingRecord) throws DataAccessException {
+    public void updateRating(Rating rating) throws DataAccessException {
         try {
-            ObjectId objectId = new ObjectId(ratingRecord.getId());
-            Document update = toDocument(ratingRecord);
-            update.put(MONGO_ID, objectId);
-            update.put(TRIP_ID, new ObjectId(ratingRecord.getTripId()));
-
-            collection.updateOne(Filters.eq(MONGO_ID, objectId), new Document("$set", update));
-            log.info(UPDATE_RATING_SUCCESS, ratingRecord.getId());
+            ObjectId objectId = new ObjectId(rating.getId().toString());
+            Document update = toDocument(rating);
+            UpdateResult result = collection.updateOne(Filters.eq("_id", objectId), new Document("$set", update));
+            if (result.getModifiedCount() == 0) {
+                log.warn("Rating not found for update: {}", rating.getId());
+                throw new DataAccessException("Rating not found");
+            }
+            log.info("Rating updated successfully: {}", rating.getId());
         } catch (Exception e) {
-            log.error(ERROR_UPDATE_RATING, ratingRecord.getId(), e);
-            throw new DataAccessException(RATING_UPDATE_ERROR, e);
+            log.error("Error updating rating: {}", e.getMessage());
+            throw new DataAccessException("Error updating rating", e);
         }
     }
 
@@ -89,11 +77,15 @@ public class MongoRatingDao extends AbstractMongoDao<RatingRecord> implements Ra
     public void deleteRating(String id) throws DataAccessException {
         try {
             ObjectId objectId = new ObjectId(id);
-            collection.deleteOne(Filters.eq(MONGO_ID, objectId));
-            log.info(DELETE_RATING_SUCCESS, id);
+            DeleteResult result = collection.deleteOne(Filters.eq("_id", objectId));
+            if (result.getDeletedCount() > 0) {
+                log.info("Rating deleted successfully: {}", id);
+            } else {
+                log.warn("Rating not found for deletion: {}", id);
+            }
         } catch (Exception e) {
-            log.error(ERROR_DELETE_RATING, id, e);
-            throw new DataAccessException(RATING_DELETE_ERROR, e);
+            log.error("Error deleting rating: {}", e.getMessage());
+            throw new DataAccessException("Error deleting rating", e);
         }
     }
 }

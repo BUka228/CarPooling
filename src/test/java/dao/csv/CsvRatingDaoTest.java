@@ -1,14 +1,15 @@
 package dao.csv;
 
+
 import com.carpooling.dao.csv.CsvRatingDao;
-import com.carpooling.entities.record.RatingRecord;
+import com.carpooling.entities.database.Rating;
 import com.carpooling.exceptions.dao.DataAccessException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Date;
 import java.util.Optional;
@@ -18,148 +19,141 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class CsvRatingDaoTest {
 
-    @TempDir
-    Path tempDir; // Временная директория для тестов
-
     private CsvRatingDao ratingDao;
+    @TempDir
+    Path tempDir;
+
     private File tempFile;
 
     @BeforeEach
-    void setUp() {
-        // Создаем временный файл для тестов
-        tempFile = tempDir.resolve("test-ratings.csv").toFile();
+    void setUp() throws IOException {
+        String testFileName = "test-ratings.csv";
+        Path filePath = tempDir.resolve(testFileName);
+        Files.createFile(filePath);
+        tempFile = filePath.toFile();
         ratingDao = new CsvRatingDao(tempFile.getAbsolutePath());
     }
 
+    private Rating createTestRating() {
+        Rating rating = new Rating();
+        // Устанавливаем только поля, аннотированные @CsvBindByName
+        rating.setRating(5);
+        rating.setComment("Excellent trip!");
+        rating.setDate(new Date());
+        // rating.setTrip(new Trip()); // Поле Trip не аннотировано @CsvBindByName
+        return rating;
+    }
+
     @Test
-    void testCreateRating_Success() {
-        RatingRecord ratingRecord = new RatingRecord();
-        ratingRecord.setRating(5);
-        ratingRecord.setComment("Отличная поездка!");
-        ratingRecord.setDate(new Date());
-        ratingRecord.setTripId("trip-1");
+    void createRating_Success() throws DataAccessException {
+        Rating rating = createTestRating();
+        String id = ratingDao.createRating(rating);
 
-        String ratingId = ratingDao.createRating(ratingRecord);
+        assertNotNull(id);
+        UUID generatedUUID = assertDoesNotThrow(() -> UUID.fromString(id));
 
-        // Проверяем, что ID был сгенерирован и соответствует формату UUID
-        assertNotNull(ratingId);
-        assertDoesNotThrow(() -> UUID.fromString(ratingId));
+        Optional<Rating> foundRatingOpt = ratingDao.getRatingById(id);
+        assertTrue(foundRatingOpt.isPresent());
+        Rating foundRating = foundRatingOpt.get();
 
-        // Проверяем, что рейтинг был добавлен
-        Optional<RatingRecord> foundRating = ratingDao.getRatingById(ratingId);
+        assertEquals(generatedUUID, foundRating.getId());
+        assertEquals(rating.getRating(), foundRating.getRating());
+        assertEquals(rating.getComment(), foundRating.getComment());
+        assertNotNull(foundRating.getDate());
+    }
+
+    @Test
+    void createRating_DataAccessException_OnFileError() {
+        Rating rating = createTestRating();
+        assertTrue(tempFile.setWritable(false));
+        assertThrows(DataAccessException.class, () -> ratingDao.createRating(rating));
+        tempFile.setWritable(true);
+    }
+
+    @Test
+    void createRating_NullInput_ShouldThrowException() {
+        assertThrows(IllegalArgumentException.class, () -> ratingDao.createRating(null));
+    }
+
+    @Test
+    void getRatingById_Success() throws DataAccessException {
+        Rating rating = createTestRating();
+        String id = ratingDao.createRating(rating);
+        Optional<Rating> foundRating = ratingDao.getRatingById(id);
         assertTrue(foundRating.isPresent());
-        assertEquals(5, foundRating.get().getRating());
+        assertEquals(UUID.fromString(id), foundRating.get().getId());
+        assertEquals(rating.getRating(), foundRating.get().getRating());
     }
 
     @Test
-    void testCreateRating_Fail() {
-        // Создаем временный файл и делаем его недоступным для записи
-        File file = tempDir.resolve("test-ratings-fail.csv").toFile();
-        try {
-            file.createNewFile();
-            file.setReadOnly(); // Делаем файл доступным только для чтения
-        } catch (IOException e) {
-            fail("Не удалось создать или изменить права доступа к файлу.");
-        }
-
-        CsvRatingDao failDao = new CsvRatingDao(file.getAbsolutePath());
-
-        // Пытаемся создать рейтинг
-        RatingRecord ratingRecord = new RatingRecord();
-        ratingRecord.setRating(5);
-        ratingRecord.setComment("Отличная поездка!");
-        ratingRecord.setDate(new Date());
-        ratingRecord.setTripId("trip-1");
-
-        assertThrows(DataAccessException.class, () -> failDao.createRating(ratingRecord));
-
-        // Восстанавливаем права доступа к файлу для последующих тестов
-        file.setWritable(true);
-    }
-
-
-    @Test
-    void testGetRatingById_Success() {
-        // Создаем тестовый рейтинг
-        RatingRecord ratingRecord = new RatingRecord();
-        ratingRecord.setRating(4);
-        ratingRecord.setComment("Хорошая поездка");
-        ratingRecord.setDate(new Date());
-        ratingRecord.setTripId("trip-2");
-
-        String ratingId = ratingDao.createRating(ratingRecord);
-
-        // Получаем рейтинг по ID
-        Optional<RatingRecord> foundRating = ratingDao.getRatingById(ratingId);
-
-        // Проверяем, что рейтинг найден
-        assertTrue(foundRating.isPresent());
-        assertEquals(ratingId, foundRating.get().getId());
-        assertEquals(4, foundRating.get().getRating());
-    }
-
-    @Test
-    void testGetRatingById_NotFound() {
-        // Пытаемся получить несуществующий рейтинг
-        Optional<RatingRecord> foundRating = ratingDao.getRatingById("non-existent-id");
-
-        // Проверяем, что рейтинг не найден
+    void getRatingById_NotFound() throws DataAccessException {
+        String nonExistentId = UUID.randomUUID().toString();
+        Optional<Rating> foundRating = ratingDao.getRatingById(nonExistentId);
         assertFalse(foundRating.isPresent());
     }
 
     @Test
-    void testUpdateRating_Success() {
-        // Создаем тестовый рейтинг
-        RatingRecord ratingRecord = new RatingRecord();
-        ratingRecord.setRating(3);
-        ratingRecord.setComment("Нормальная поездка");
-        ratingRecord.setDate(new Date());
-        ratingRecord.setTripId("trip-3");
-
-        String ratingId = ratingDao.createRating(ratingRecord);
-
-        // Обновляем рейтинг
-        ratingRecord.setRating(5);
-        ratingDao.updateRating(ratingRecord);
-
-        // Проверяем, что рейтинг обновлен
-        Optional<RatingRecord> updatedRating = ratingDao.getRatingById(ratingId);
-        assertTrue(updatedRating.isPresent());
-        assertEquals(5, updatedRating.get().getRating());
+    void getRatingById_DataAccessException_OnFileError() throws DataAccessException, IOException {
+        Rating rating = createTestRating();
+        String id = ratingDao.createRating(rating);
+        assertTrue(Files.deleteIfExists(tempFile.toPath()));
+        assertThrows(DataAccessException.class, () -> ratingDao.getRatingById(id));
     }
 
     @Test
-    void testUpdateRating_NotFound() {
-        // Пытаемся обновить несуществующий рейтинг
-        RatingRecord ratingRecord = new RatingRecord();
-        ratingRecord.setId("non-existent-id");
-        ratingRecord.setRating(1);
+    void updateRating_Success() throws DataAccessException {
+        Rating rating = createTestRating();
+        String id = ratingDao.createRating(rating);
+        UUID ratingUUID = UUID.fromString(id);
 
-        assertThrows(DataAccessException.class, () -> ratingDao.updateRating(ratingRecord));
+        Rating createdRating = ratingDao.getRatingById(id).orElseThrow(() -> new AssertionError("Failed to retrieve rating for update test"));
+
+        createdRating.setRating(1);
+        createdRating.setComment("Very bad trip.");
+        ratingDao.updateRating(createdRating);
+
+        Optional<Rating> updatedRatingOpt = ratingDao.getRatingById(id);
+        assertTrue(updatedRatingOpt.isPresent());
+        Rating updatedRating = updatedRatingOpt.get();
+
+        assertEquals(1, updatedRating.getRating());
+        assertEquals("Very bad trip.", updatedRating.getComment());
+        assertEquals(ratingUUID, updatedRating.getId());
     }
 
     @Test
-    void testDeleteRating_Success() {
-        // Создаем тестовый рейтинг
-        RatingRecord ratingRecord = new RatingRecord();
-        ratingRecord.setRating(2);
-        ratingRecord.setComment("Плохая поездка");
-        ratingRecord.setDate(new Date());
-        ratingRecord.setTripId("trip-4");
-
-        String ratingId = ratingDao.createRating(ratingRecord);
-
-        // Удаляем рейтинг
-        ratingDao.deleteRating(ratingId);
-
-        // Проверяем, что рейтинг удален
-        Optional<RatingRecord> deletedRating = ratingDao.getRatingById(ratingId);
-        assertFalse(deletedRating.isPresent());
+    void updateRating_NotFound() {
+        Rating nonExistentRating = createTestRating();
+        nonExistentRating.setId(UUID.randomUUID());
+        assertThrows(DataAccessException.class, () -> ratingDao.updateRating(nonExistentRating));
     }
 
     @Test
-    void testDeleteRating_NotFound() {
-        // Пытаемся удалить несуществующий рейтинг
-        assertThrows(DataAccessException.class, () -> ratingDao.deleteRating("non-existent-id"));
+    void updateRating_NullInput_ShouldThrowException() {
+        assertThrows(IllegalArgumentException.class, () -> ratingDao.updateRating(null));
+    }
+
+    @Test
+    void deleteRating_Success() throws DataAccessException {
+        Rating rating = createTestRating();
+        String id = ratingDao.createRating(rating);
+        assertTrue(ratingDao.getRatingById(id).isPresent());
+        assertDoesNotThrow(() -> ratingDao.deleteRating(id));
+        assertFalse(ratingDao.getRatingById(id).isPresent());
+    }
+
+    @Test
+    void deleteRating_NotFound() {
+        String nonExistentId = UUID.randomUUID().toString();
+        assertDoesNotThrow(() -> ratingDao.deleteRating(nonExistentId));
+    }
+
+    @Test
+    void deleteRating_DataAccessException_OnFileError() throws DataAccessException {
+        Rating rating = createTestRating();
+        String id = ratingDao.createRating(rating);
+        assertTrue(tempFile.setWritable(false));
+        assertThrows(DataAccessException.class, () -> ratingDao.deleteRating(id));
+        tempFile.setWritable(true);
     }
 }
