@@ -6,6 +6,7 @@ import com.mongodb.Function;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoIterable;
+import com.mongodb.client.cursor.TimeoutMode;
 import com.mongodb.client.model.Collation;
 import org.bson.BsonValue;
 import org.bson.Document;
@@ -81,10 +82,6 @@ public class FakeFindIterable implements FindIterable<Document> {
         return null;
     }
 
-    @Override
-    public FindIterable<Document> oplogReplay(boolean b) {
-        return null;
-    }
 
     @Override
     public FindIterable<Document> partial(boolean b) {
@@ -153,6 +150,11 @@ public class FakeFindIterable implements FindIterable<Document> {
 
     @Override
     public FindIterable<Document> allowDiskUse(Boolean aBoolean) {
+        return null;
+    }
+
+    @Override
+    public FindIterable<Document> timeoutMode(TimeoutMode timeoutMode) {
         return null;
     }
 

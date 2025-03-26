@@ -22,11 +22,8 @@ public class MongoHistoryContentDao extends AbstractMongoDao<HistoryContent> imp
     @Override
     public String createHistory(HistoryContent historyContent) throws DataAccessException {
         try {
-            // Преобразуем объект HistoryContent в документ для MongoDB
             Document document = toDocument(historyContent);
             collection.insertOne(document);
-
-            // Получаем сгенерированный ObjectId и возвращаем его как строку
             ObjectId generatedId = document.getObjectId("_id");
             String id = generatedId.toHexString();
 

@@ -1,7 +1,7 @@
 package com.carpooling.services.base;
 
 import com.carpooling.entities.history.HistoryContent;
-import com.carpooling.entities.history.Status;
+import com.carpooling.entities.enums.Status;
 import com.carpooling.exceptions.service.HistoryContentServiceException;
 
 import java.time.LocalDateTime;

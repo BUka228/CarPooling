@@ -1,58 +1,87 @@
 @startuml
+' Определение Enum (не отображаются как таблицы, но полезны для типов)
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum TripStatus {
+  PLANNED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
 entity Пользователь {
-    +id : UUID <<PK>>
-    +имя : String
-    +email : String
-    +пароль : String
-    +пол : String
-    +телефон : String
-    +датаРождения : Date
-    +адрес : Address
-    +предпочтения : String
+  +id : UUID <<PK>>
+  +имя : String
+  +email : String <<NaturalId>>
+  +пароль : String
+  +пол : String
+  +телефон : String
+  +датаРождения : LocalDate
+  +адрес : Address
+  +предпочтения : String
+  ' version : Long  -- Убрано
 }
 
 entity Поездка {
-    +id : UUID <<PK>>
-    +времяВыезда : Date
-    +максимумПассажиров : byte
-    +датаСоздания : Date
-    +статус : String
-    +редактируемый : Boolean
-    +пользовательId : String <<FK>>
-    +маршрутId : UUID <<FK>>
+  +id : UUID <<PK>>
+  +времяВыезда : LocalDateTime
+  +максимумПассажиров : byte
+  +датаСоздания : LocalDateTime
+  +статус : TripStatus
+  +редактируемый : Boolean
+  +пользовательId : UUID <<FK>>
+  +маршрутId : UUID <<FK>>
+  ' version : Long -- Убрано
 }
 
 entity Маршрут {
-    +id : UUID <<PK>>
-    +начальнаяТочка : String
-    +конечнаяТочка : String
-    +дата : Date
-    +оценочнаяПродолжительность : short
+  +id : UUID <<PK>>
+  +начальнаяТочка : String
+  +конечнаяТочка : String
+  +дата : LocalDateTime
+  +оценочнаяПродолжительность : short
+  ' version : Long -- Убрано
 }
 
 entity Бронирование {
-    +id : UUID <<PK>>
-    +количествоМест : byte
-    +статус : String
-    +датаБронирования : Date
-    +номерПаспорта : String
-    +датаОкончанияСрокаПаспорта : Date
-    +поездкаId : UUID <<FK>>
-    +пользовательId : UUID <<FK>>
+  +id : UUID <<PK>>
+  +количествоМест : byte
+  +статус : BookingStatus
+  +датаБронирования : LocalDateTime
+  +номерПаспорта : String
+  +датаОкончанияСрокаПаспорта : LocalDate
+  +поездкаId : UUID <<FK>>
+  +пользовательId : UUID <<FK>>
+  ' version : Long -- Убрано
 }
 
 entity Оценка {
-    +id : UUID <<PK>>
-    +рейтинг : int
-    +комментарий : String
-    +дата : Date
-    +поездкаId : UUID <<FK>>
+  +id : UUID <<PK>>
+  +рейтинг : int
+  +комментарий : String
+  +дата : LocalDateTime
+  +поездкаId : UUID <<FK>>
+  ' version : Long -- Убрано
+}
+
+' Определение встраиваемого типа Address (не отдельная таблица)
+entity Address <<embeddable>> {
+    +улица : String
+    +индекс : String
+    +город : String
 }
 
 Пользователь ||--o{ Поездка : создает
 Поездка ||--o{ Бронирование : содержит
 Поездка ||--o{ Оценка : имеет
 Поездка }|--|| Маршрут : использует
+Пользователь ||--o{ Бронирование : создает
+Пользователь::адрес -- Address : содержит
 
 @enduml
 

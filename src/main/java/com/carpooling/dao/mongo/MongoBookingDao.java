@@ -12,6 +12,7 @@ import org.bson.Document;
 import org.bson.types.ObjectId;
 
 import java.util.Optional;
+import java.util.UUID;
 
 
 @Slf4j
@@ -24,10 +25,10 @@ public class MongoBookingDao extends AbstractMongoDao<Booking> implements Bookin
     @Override
     public String createBooking(Booking booking) throws DataAccessException {
         try {
+            booking.setId(UUID.randomUUID());
             Document document = toDocument(booking);
             collection.insertOne(document);
-            ObjectId generatedId = document.getObjectId("_id");
-            String id = generatedId.toHexString();
+            String id = document.getString("id");
             log.info("Booking created successfully: {}", id);
             return id;
         } catch (Exception e) {
@@ -39,8 +40,7 @@ public class MongoBookingDao extends AbstractMongoDao<Booking> implements Bookin
     @Override
     public Optional<Booking> getBookingById(String id) throws DataAccessException {
         try {
-            ObjectId objectId = new ObjectId(id);
-            Document result = collection.find(Filters.eq("_id", objectId)).first();
+            Document result = collection.find(Filters.eq("id", id)).first();
             if (result != null) {
                 Booking booking = fromDocument(result);
                 log.info("Booking found: {}", id);
@@ -58,9 +58,8 @@ public class MongoBookingDao extends AbstractMongoDao<Booking> implements Bookin
     @Override
     public void updateBooking(Booking booking) throws DataAccessException {
         try {
-            ObjectId objectId = new ObjectId(booking.getId().toString());
             Document update = toDocument(booking);
-            UpdateResult result = collection.updateOne(Filters.eq("_id", objectId), new Document("$set", update));
+            UpdateResult result = collection.updateOne(Filters.eq("id", booking.getId().toString()), new Document("$set", update));
             if (result.getModifiedCount() == 0) {
                 log.warn("Booking not found for update: {}", booking.getId());
                 throw new DataAccessException("Booking not found");
@@ -75,8 +74,7 @@ public class MongoBookingDao extends AbstractMongoDao<Booking> implements Bookin
     @Override
     public void deleteBooking(String id) throws DataAccessException {
         try {
-            ObjectId objectId = new ObjectId(id);
-            DeleteResult result = collection.deleteOne(Filters.eq("_id", objectId));
+            DeleteResult result = collection.deleteOne(Filters.eq("id", id));
             if (result.getDeletedCount() > 0) {
                 log.info("Booking deleted successfully: {}", id);
             } else {

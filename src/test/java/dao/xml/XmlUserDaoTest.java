@@ -15,6 +15,7 @@ import lombok.Data; // Пример импорта для Address
 
 import java.io.File;
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
@@ -45,7 +46,7 @@ class XmlUserDaoTest {
         user.setPassword("password123");
         user.setGender("Other");
         user.setPhone("123-456-7890");
-        user.setBirthDate(new Date(System.currentTimeMillis() - 1000L * 3600 * 24 * 365 * 30));
+        user.setBirthDate(LocalDate.now().minusYears(25));
         user.setPreferences("Non-smoker, Quiet");
 
         Address address = new Address();

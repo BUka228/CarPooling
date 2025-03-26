@@ -1,10 +1,12 @@
 package com.carpooling.entities.database;
 
+import com.carpooling.adapters.LocalDateTimeAdapter;
 import com.opencsv.bean.CsvDate;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -16,6 +18,7 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import java.util.Date;
 import java.util.UUID;
 
@@ -25,35 +28,27 @@ import java.util.UUID;
 @XmlRootElement(name = "route")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class Route {
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @CsvBindByName(column = "id")
-    @JsonProperty("id")
-    @XmlElement(name = "id")
+    @Column(name = "id", nullable = false)
     private UUID id;
 
-    @Column
-    @CsvBindByName(column = "startingPoint")
-    @JsonProperty("startingPoint")
-    @XmlElement(name = "startingPoint")
+    @Column(name = "starting_point", nullable = false)
     private String startingPoint;
 
-    @Column
-    @CsvBindByName(column = "endingPoint")
-    @JsonProperty("endingPoint")
-    @XmlElement(name = "endingPoint")
+    @Column(name = "ending_point", nullable = false)
     private String endingPoint;
 
-    @Column
-    @CsvBindByName(column = "date")
+    @Column(name = "date") // Может быть null, если маршрут общий?
     @CsvDate("yyyy-MM-dd HH:mm:ss")
-    @JsonProperty("date")
-    @XmlElement(name = "date")
-    private Date date;
+    @XmlJavaTypeAdapter(LocalDateTimeAdapter.class)
+    private LocalDateTime date;
 
-    @Column
-    @CsvBindByName(column = "estimatedDuration")
-    @JsonProperty("estimatedDuration")
-    @XmlElement(name = "estimatedDuration")
+    @Column(name = "estimated_duration") // В минутах?
     private short estimatedDuration;
+
+    @Version
+    @Column(name = "version")
+    private Long version;
 }

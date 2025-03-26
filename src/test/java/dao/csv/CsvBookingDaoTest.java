@@ -2,6 +2,7 @@ package dao.csv;
 
 import com.carpooling.dao.csv.CsvBookingDao;
 import com.carpooling.entities.database.Booking;
+import com.carpooling.entities.enums.BookingStatus;
 import com.carpooling.exceptions.dao.DataAccessException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,6 +12,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
@@ -42,13 +45,12 @@ class CsvBookingDaoTest {
     // Вспомогательный метод для создания тестовой сущности
     private Booking createTestBooking() {
         Booking booking = new Booking();
-        // Устанавливаем только поля, аннотированные @CsvBindByName
         booking.setNumberOfSeats((byte) 2);
-        booking.setStatus("confirmed");
-        booking.setBookingDate(new Date());
+        booking.setStatus(BookingStatus.CONFIRMED);
+        booking.setBookingDate(LocalDateTime.now());
         booking.setPassportNumber("PN123456");
         // Добавляем дату истечения срока действия паспорта, т.к. она есть в сущности и аннотирована
-        booking.setPassportExpiryDate(new Date(System.currentTimeMillis() + 1000L * 3600 * 24 * 365)); // +1 год
+        booking.setPassportExpiryDate(LocalDate.now()); // +1 год
 
         // Поля Trip и User не аннотированы @CsvBindByName, поэтому их не устанавливаем для CSV
         return booking;
@@ -138,7 +140,7 @@ class CsvBookingDaoTest {
         Booking createdBooking = bookingDao.getBookingById(id).orElseThrow(() -> new AssertionError("Failed to retrieve booking for update test"));
 
         // Изменяем сущность
-        createdBooking.setStatus("cancelled");
+        createdBooking.setStatus(BookingStatus.CONFIRMED);
         createdBooking.setNumberOfSeats((byte) 1);
 
         bookingDao.updateBooking(createdBooking); // Используем объект с правильным UUID
@@ -147,7 +149,7 @@ class CsvBookingDaoTest {
         assertTrue(updatedBookingOpt.isPresent(), "Booking should exist after update");
         Booking updatedBooking = updatedBookingOpt.get();
 
-        assertEquals("cancelled", updatedBooking.getStatus());
+        assertEquals(BookingStatus.CONFIRMED, updatedBooking.getStatus());
         assertEquals((byte) 1, updatedBooking.getNumberOfSeats());
         assertEquals(bookingUUID, updatedBooking.getId()); // Убедимся, что ID не изменился
     }

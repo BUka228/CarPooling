@@ -1,6 +1,11 @@
 import com.carpooling.cli.context.CliContext;
+import com.carpooling.dao.base.BookingDao;
+import com.carpooling.dao.mongo.MongoBookingDao;
+import com.carpooling.entities.database.Booking;
 import com.carpooling.entities.database.Route;
 import com.carpooling.entities.database.Trip;
+import com.carpooling.entities.database.User;
+import com.carpooling.entities.enums.BookingStatus;
 import com.carpooling.exceptions.service.TripServiceException;
 import com.carpooling.exceptions.service.UserServiceException;
 import com.carpooling.factories.DaoFactory;
@@ -12,6 +17,8 @@ import org.junit.jupiter.api.Test;
 import java.nio.charset.Charset;
 import java.sql.Date;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -19,7 +26,30 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public class RealSaveTest {
 
     @Test
-    public void testSaveUser() throws UserServiceException, TripServiceException {
+    public void testSaveBooking() throws UserServiceException, TripServiceException {
+
+        Booking booking = new Booking();
+        booking.setNumberOfSeats((byte) 2);
+        booking.setStatus(BookingStatus.CONFIRMED);
+        booking.setBookingDate(LocalDateTime.now());
+        booking.setPassportNumber("AB1234567");
+        booking.setPassportExpiryDate(LocalDate.now().plusYears(1));
+
+
+        BookingDao dao = DaoFactory.getBookingDao(CliContext.StorageType.MONGO);
+        String bookingId = dao.createBooking(booking);
+        assertNotNull(bookingId);
+
+        Optional<Booking> i = dao.getBookingById(bookingId);
+        assertNotNull(i);
+
+
+    }
+
+
+
+
+
         /*// Устанавливаем тип хранилища для Hibernate
         CliContext.setCurrentStorageType(CliContext.StorageType.POSTGRES);
 
@@ -82,10 +112,5 @@ public class RealSaveTest {
 
         System.out.println("User ID: " + userId);
         System.out.println("Trip ID: " + tripId);*/
-    }
 
-    @Test
-    public void cliSaveFromCommand() {
-        // Оставлено пустым, как в исходном коде
-    }
 }

@@ -2,7 +2,7 @@ package com.carpooling.services.impl;
 
 import com.carpooling.dao.base.HistoryContentDao;
 import com.carpooling.entities.history.HistoryContent;
-import com.carpooling.entities.history.Status;
+import com.carpooling.entities.enums.Status;
 import com.carpooling.exceptions.service.HistoryContentServiceException;
 import com.carpooling.services.base.HistoryContentService;
 import lombok.AllArgsConstructor;

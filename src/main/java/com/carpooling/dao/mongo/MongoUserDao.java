@@ -12,6 +12,7 @@ import org.bson.Document;
 import org.bson.types.ObjectId;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Slf4j
 public class MongoUserDao extends AbstractMongoDao<User> implements UserDao {
@@ -23,11 +24,11 @@ public class MongoUserDao extends AbstractMongoDao<User> implements UserDao {
     @Override
     public String createUser(User user) throws DataAccessException {
         try {
+            user.setId(UUID.randomUUID());
             Document document = toDocument(user);
             collection.insertOne(document);
 
-            ObjectId generatedId = document.getObjectId("_id");
-            String id = generatedId.toHexString();
+            String id = document.getString("id");
             log.info("User created successfully: {}", id);
             return id;
         } catch (Exception e) {
@@ -39,8 +40,7 @@ public class MongoUserDao extends AbstractMongoDao<User> implements UserDao {
     @Override
     public Optional<User> getUserById(String id) throws DataAccessException {
         try {
-            ObjectId objectId = new ObjectId(id);
-            Document result = collection.find(Filters.eq("_id", objectId)).first();
+            Document result = collection.find(Filters.eq("id", id)).first();
             if (result != null) {
                 User user = fromDocument(result);
                 log.info("User found: {}", id);
@@ -58,9 +58,8 @@ public class MongoUserDao extends AbstractMongoDao<User> implements UserDao {
     @Override
     public void updateUser(User user) throws DataAccessException {
         try {
-            ObjectId objectId = new ObjectId(user.getId().toString());
             Document update = toDocument(user);
-            UpdateResult result = collection.updateOne(Filters.eq("_id", objectId), new Document("$set", update));
+            UpdateResult result = collection.updateOne(Filters.eq("id", user.getId().toString()), new Document("$set", update));
             if (result.getModifiedCount() == 0) {
                 log.warn("User not found for update: {}", user.getId());
                 throw new DataAccessException("User not found");
@@ -75,8 +74,7 @@ public class MongoUserDao extends AbstractMongoDao<User> implements UserDao {
     @Override
     public void deleteUser(String id) throws DataAccessException {
         try {
-            ObjectId objectId = new ObjectId(id);
-            DeleteResult result = collection.deleteOne(Filters.eq("_id", objectId));
+            DeleteResult result = collection.deleteOne(Filters.eq("id", id));
             if (result.getDeletedCount() > 0) {
                 log.info("User deleted successfully: {}", id);
             } else {

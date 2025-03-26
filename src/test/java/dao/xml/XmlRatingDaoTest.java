@@ -10,6 +10,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
@@ -35,7 +36,7 @@ class XmlRatingDaoTest {
         Rating rating = new Rating();
         rating.setRating(5);
         rating.setComment("Excellent trip!");
-        rating.setDate(new Date());
+        rating.setDate(LocalDateTime.now());
         return rating;
     }
 

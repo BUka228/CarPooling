@@ -2,12 +2,15 @@ package dao.xml;
 
 import com.carpooling.dao.xml.XmlBookingDao;
 import com.carpooling.entities.database.Booking;
+import com.carpooling.entities.enums.BookingStatus;
 import com.carpooling.exceptions.dao.DataAccessException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import java.io.File;
 import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
@@ -32,10 +35,10 @@ class XmlBookingDaoTest {
     private Booking createTestBooking() {
         Booking booking = new Booking();
         booking.setNumberOfSeats((byte) 2);
-        booking.setStatus("confirmed");
-        booking.setBookingDate(new Date());
+        booking.setStatus(BookingStatus.CONFIRMED);
+        booking.setBookingDate(LocalDateTime.now());
         booking.setPassportNumber("PN123456");
-        booking.setPassportExpiryDate(new Date(System.currentTimeMillis() + 1000L * 3600 * 24 * 365)); // +1 year
+        booking.setPassportExpiryDate(LocalDate.now().plusYears(1));
         return booking;
     }
 
@@ -123,7 +126,7 @@ class XmlBookingDaoTest {
         Booking createdBooking = bookingDao.getBookingById(id).orElseThrow(() -> new AssertionError("Не удалось получить бронирование для теста обновления"));
 
         // Изменяем сущность
-        createdBooking.setStatus("cancelled");
+        createdBooking.setStatus(BookingStatus.CANCELLED);
         createdBooking.setNumberOfSeats((byte) 1);
 
         bookingDao.updateBooking(createdBooking); // Используем объект с правильным UUID
@@ -132,7 +135,7 @@ class XmlBookingDaoTest {
         assertTrue(updatedBookingOpt.isPresent(), "Бронирование должно существовать после обновления");
         Booking updatedBooking = updatedBookingOpt.get();
 
-        assertEquals("cancelled", updatedBooking.getStatus());
+        assertEquals(BookingStatus.CANCELLED, updatedBooking.getStatus());
         assertEquals((byte) 1, updatedBooking.getNumberOfSeats());
         assertEquals(bookingUUID, updatedBooking.getId()); // Убеждаемся, что ID не изменился
     }

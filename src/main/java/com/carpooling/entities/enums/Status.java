@@ -1,4 +1,4 @@
-package com.carpooling.entities.history;
+package com.carpooling.entities.enums;
 
 
 public enum Status {

@@ -1,5 +1,6 @@
 package com.carpooling.entities.database;
 
+import com.carpooling.adapters.LocalDateAdapter;
 import com.carpooling.utils.AddressConverter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -7,12 +8,13 @@ import com.opencsv.bean.CsvBindByName;
 import com.opencsv.bean.CsvCustomBindByName;
 import com.opencsv.bean.CsvDate;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.hibernate.annotations.NaturalId;
 import org.jetbrains.annotations.NotNull;
 
 import javax.xml.bind.annotation.*;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
@@ -25,49 +27,40 @@ import java.util.UUID;
 @XmlRootElement(name = "user")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class User {
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", nullable = false)
     @CsvBindByName(column = "id")
-    @JsonProperty("id")
-    @XmlElement(name = "id")
     private UUID id;
 
-    @Column(nullable = false)
+    @Column(name = "name", nullable = false)
     @CsvBindByName(column = "name")
-    @JsonProperty("name")
-    @XmlElement(name = "name")
     private String name;
 
-    @Column(nullable = false, unique = true)
+    @NaturalId
+    @Column(name = "email", nullable = false, unique = true)
     @CsvBindByName(column = "email")
-    @JsonProperty("email")
-    @XmlElement(name = "email")
     private String email;
 
-    @Column(nullable = false)
+    @Column(name = "password", nullable = false)
+    @ToString.Exclude
     @CsvBindByName(column = "password")
-    @JsonProperty("password")
-    @XmlElement(name = "password")
     private String password;
 
-    @Column
+    @Column(name = "gender")
     @CsvBindByName(column = "gender")
-    @JsonProperty("gender")
-    @XmlElement(name = "gender")
     private String gender;
 
-    @Column
+    @Column(name = "phone")
     @CsvBindByName(column = "phone")
-    @JsonProperty("phone")
-    @XmlElement(name = "phone")
     private String phone;
 
-    @Column
-    @CsvBindByName(column = "birthDate")
+    @Column(name = "birth_date")
     @CsvDate("yyyy-MM-dd")
-    @JsonProperty("birthDate")
-    @XmlElement(name = "birthDate")
-    private Date birthDate;
+    @CsvBindByName(column = "birth_date")
+    @XmlJavaTypeAdapter(LocalDateAdapter.class)
+    private LocalDate birthDate;
 
     @Embedded
     @CsvCustomBindByName(column = "address", converter = AddressConverter.class)
@@ -75,19 +68,21 @@ public class User {
     @XmlElement(name = "address")
     private Address address;
 
-    @Column
+    @Column(name = "preferences", length = 2000)
     @CsvBindByName(column = "preferences")
-    @JsonProperty("preferences")
-    @XmlElement(name = "preferences")
     private String preferences;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @JsonIgnore
     @XmlTransient
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Set<Trip> trips = new HashSet<>();
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @JsonIgnore
     @XmlTransient
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Set<Booking> bookings = new HashSet<>();
 }

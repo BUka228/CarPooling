@@ -12,6 +12,7 @@ import org.bson.Document;
 import org.bson.types.ObjectId;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Slf4j
 public class MongoTripDao extends AbstractMongoDao<Trip> implements TripDao {
@@ -23,11 +24,11 @@ public class MongoTripDao extends AbstractMongoDao<Trip> implements TripDao {
     @Override
     public String createTrip(Trip trip) throws DataAccessException {
         try {
+            trip.setId(UUID.randomUUID());
             Document document = toDocument(trip);
             collection.insertOne(document);
 
-            ObjectId generatedId = document.getObjectId("_id");
-            String id = generatedId.toHexString();
+            String id = document.getString("id");
             log.info("Trip created successfully: {}", id);
             return id;
         } catch (Exception e) {
@@ -39,8 +40,7 @@ public class MongoTripDao extends AbstractMongoDao<Trip> implements TripDao {
     @Override
     public Optional<Trip> getTripById(String id) throws DataAccessException {
         try {
-            ObjectId objectId = new ObjectId(id);
-            Document result = collection.find(Filters.eq("_id", objectId)).first();
+            Document result = collection.find(Filters.eq("id", id)).first();
             if (result != null) {
                 Trip trip = fromDocument(result);
                 log.info("Trip found: {}", id);
@@ -58,9 +58,8 @@ public class MongoTripDao extends AbstractMongoDao<Trip> implements TripDao {
     @Override
     public void updateTrip(Trip trip) throws DataAccessException {
         try {
-            ObjectId objectId = new ObjectId(trip.getId().toString());
             Document update = toDocument(trip);
-            UpdateResult result = collection.updateOne(Filters.eq("_id", objectId), new Document("$set", update));
+            UpdateResult result = collection.updateOne(Filters.eq("id", trip.getId().toString()), new Document("$set", update));
             if (result.getModifiedCount() == 0) {
                 log.warn("Trip not found for update: {}", trip.getId());
                 throw new DataAccessException("Trip not found");
@@ -75,8 +74,7 @@ public class MongoTripDao extends AbstractMongoDao<Trip> implements TripDao {
     @Override
     public void deleteTrip(String id) throws DataAccessException {
         try {
-            ObjectId objectId = new ObjectId(id);
-            DeleteResult result = collection.deleteOne(Filters.eq("_id", objectId));
+            DeleteResult result = collection.deleteOne(Filters.eq("id", id));
             if (result.getDeletedCount() > 0) {
                 log.info("Trip deleted successfully: {}", id);
             } else {

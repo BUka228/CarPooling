@@ -11,6 +11,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
@@ -39,7 +40,7 @@ class CsvRatingDaoTest {
         // Устанавливаем только поля, аннотированные @CsvBindByName
         rating.setRating(5);
         rating.setComment("Excellent trip!");
-        rating.setDate(new Date());
+        rating.setDate(LocalDateTime.now());
         // rating.setTrip(new Trip()); // Поле Trip не аннотировано @CsvBindByName
         return rating;
     }

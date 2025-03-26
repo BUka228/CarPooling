@@ -12,6 +12,7 @@ import org.bson.Document;
 import org.bson.types.ObjectId;
 
 import java.util.Optional;
+import java.util.UUID;
 
 
 @Slf4j
@@ -24,11 +25,11 @@ public class MongoRatingDao extends AbstractMongoDao<Rating> implements RatingDa
     @Override
     public String createRating(Rating rating) throws DataAccessException {
         try {
+            rating.setId(UUID.randomUUID());
             Document document = toDocument(rating);
             collection.insertOne(document);
 
-            ObjectId generatedId = document.getObjectId("_id");
-            String id = generatedId.toHexString();
+            String id = document.getString("id");
             log.info("Rating created successfully: {}", id);
             return id;
         } catch (Exception e) {
@@ -40,8 +41,7 @@ public class MongoRatingDao extends AbstractMongoDao<Rating> implements RatingDa
     @Override
     public Optional<Rating> getRatingById(String id) throws DataAccessException {
         try {
-            ObjectId objectId = new ObjectId(id);
-            Document result = collection.find(Filters.eq("_id", objectId)).first();
+            Document result = collection.find(Filters.eq("id", id)).first();
             if (result != null) {
                 Rating rating = fromDocument(result);
                 log.info("Rating found: {}", id);
@@ -59,9 +59,8 @@ public class MongoRatingDao extends AbstractMongoDao<Rating> implements RatingDa
     @Override
     public void updateRating(Rating rating) throws DataAccessException {
         try {
-            ObjectId objectId = new ObjectId(rating.getId().toString());
             Document update = toDocument(rating);
-            UpdateResult result = collection.updateOne(Filters.eq("_id", objectId), new Document("$set", update));
+            UpdateResult result = collection.updateOne(Filters.eq("id", rating.getId().toString()), new Document("$set", update));
             if (result.getModifiedCount() == 0) {
                 log.warn("Rating not found for update: {}", rating.getId());
                 throw new DataAccessException("Rating not found");
@@ -76,8 +75,7 @@ public class MongoRatingDao extends AbstractMongoDao<Rating> implements RatingDa
     @Override
     public void deleteRating(String id) throws DataAccessException {
         try {
-            ObjectId objectId = new ObjectId(id);
-            DeleteResult result = collection.deleteOne(Filters.eq("_id", objectId));
+            DeleteResult result = collection.deleteOne(Filters.eq("id", id));
             if (result.getDeletedCount() > 0) {
                 log.info("Rating deleted successfully: {}", id);
             } else {

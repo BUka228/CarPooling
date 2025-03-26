@@ -12,6 +12,7 @@ import org.bson.Document;
 import org.bson.types.ObjectId;
 
 import java.util.Optional;
+import java.util.UUID;
 
 
 @Slf4j
@@ -24,11 +25,11 @@ public class MongoRouteDao extends AbstractMongoDao<Route> implements RouteDao {
     @Override
     public String createRoute(Route route) throws DataAccessException {
         try {
+            route.setId(UUID.randomUUID());
             Document document = toDocument(route);
             collection.insertOne(document);
 
-            ObjectId generatedId = document.getObjectId("_id");
-            String id = generatedId.toHexString();
+            String id = document.getString("id");
             log.info("Route created successfully: {}", id);
             return id;
         } catch (Exception e) {
@@ -40,8 +41,7 @@ public class MongoRouteDao extends AbstractMongoDao<Route> implements RouteDao {
     @Override
     public Optional<Route> getRouteById(String id) throws DataAccessException {
         try {
-            ObjectId objectId = new ObjectId(id);
-            Document result = collection.find(Filters.eq("_id", objectId)).first();
+            Document result = collection.find(Filters.eq("id", id)).first();
             if (result != null) {
                 Route route = fromDocument(result);
                 log.info("Route found: {}", id);
@@ -59,9 +59,8 @@ public class MongoRouteDao extends AbstractMongoDao<Route> implements RouteDao {
     @Override
     public void updateRoute(Route route) throws DataAccessException {
         try {
-            ObjectId objectId = new ObjectId(route.getId().toString());
             Document update = toDocument(route);
-            UpdateResult result = collection.updateOne(Filters.eq("_id", objectId), new Document("$set", update));
+            UpdateResult result = collection.updateOne(Filters.eq("id", route.getId().toString()), new Document("$set", update));
             if (result.getModifiedCount() == 0) {
                 log.warn("Route not found for update: {}", route.getId());
                 throw new DataAccessException("Route not found");
@@ -76,8 +75,7 @@ public class MongoRouteDao extends AbstractMongoDao<Route> implements RouteDao {
     @Override
     public void deleteRoute(String id) throws DataAccessException {
         try {
-            ObjectId objectId = new ObjectId(id);
-            DeleteResult result = collection.deleteOne(Filters.eq("_id", objectId));
+            DeleteResult result = collection.deleteOne(Filters.eq("id", id));
             if (result.getDeletedCount() > 0) {
                 log.info("Route deleted successfully: {}", id);
             } else {

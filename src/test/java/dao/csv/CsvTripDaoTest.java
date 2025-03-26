@@ -2,6 +2,7 @@ package dao.csv;
 
 import com.carpooling.dao.csv.CsvTripDao;
 import com.carpooling.entities.database.Trip;
+import com.carpooling.entities.enums.TripStatus;
 import com.carpooling.exceptions.dao.DataAccessException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,6 +11,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
@@ -36,10 +38,10 @@ class CsvTripDaoTest {
     private Trip createTestTrip() {
         Trip trip = new Trip();
         // Устанавливаем только поля, аннотированные @CsvBindByName
-        trip.setDepartureTime(new Date(System.currentTimeMillis() + 1000L * 3600 * 24)); // +1 day
+        trip.setDepartureTime(LocalDateTime.now().plusDays(1)); // +1 day
         trip.setMaxPassengers((byte) 4);
-        trip.setCreationDate(new Date());
-        trip.setStatus("scheduled");
+        trip.setCreationDate(LocalDateTime.now());
+        trip.setStatus(TripStatus.CANCELLED);
         trip.setEditable(true);
         // Поля User, Route, Bookings, Ratings не аннотированы @CsvBindByName
         return trip;
@@ -111,7 +113,7 @@ class CsvTripDaoTest {
 
         Trip createdTrip = tripDao.getTripById(id).orElseThrow(() -> new AssertionError("Failed to retrieve trip for update test"));
 
-        createdTrip.setStatus("completed");
+        createdTrip.setStatus(TripStatus.ACTIVE);
         createdTrip.setEditable(false);
         tripDao.updateTrip(createdTrip);
 
@@ -119,7 +121,7 @@ class CsvTripDaoTest {
         assertTrue(updatedTripOpt.isPresent());
         Trip updatedTrip = updatedTripOpt.get();
 
-        assertEquals("completed", updatedTrip.getStatus());
+        assertEquals(TripStatus.ACTIVE, updatedTrip.getStatus());
         assertFalse(updatedTrip.isEditable());
         assertEquals(tripUUID, updatedTrip.getId());
     }

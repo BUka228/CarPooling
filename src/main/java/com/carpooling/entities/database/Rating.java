@@ -1,10 +1,10 @@
 package com.carpooling.entities.database;
 
+import com.carpooling.adapters.LocalDateTimeAdapter;
 import com.opencsv.bean.CsvDate;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -14,6 +14,7 @@ import jakarta.persistence.*;
 
 
 import javax.xml.bind.annotation.*;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import java.util.Date;
 import java.util.UUID;
 
@@ -24,35 +25,27 @@ import java.util.UUID;
 @XmlRootElement(name = "rating")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class Rating {
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @CsvBindByName(column = "id")
-    @JsonProperty("id")
-    @XmlElement(name = "id")
+    @Column(name = "id", nullable = false)
     private UUID id;
 
-    @Column
-    @CsvBindByName(column = "rating")
-    @JsonProperty("rating")
-    @XmlElement(name = "rating")
-    private int rating;
+    @Column(name = "rating", nullable = false)
+    private int rating; // Возможно, добавить @Min @Max валидацию позже
 
-    @Column
-    @CsvBindByName(column = "comment")
-    @JsonProperty("comment")
-    @XmlElement(name = "comment")
+    @Column(name = "comment", length = 1000) // Пример ограничения длины
     private String comment;
 
-    @Column
-    @CsvBindByName(column = "date")
+    @Column(name = "date", nullable = false)
     @CsvDate("yyyy-MM-dd HH:mm:ss")
-    @JsonProperty("date")
-    @XmlElement(name = "date")
-    private Date date;
+    @XmlJavaTypeAdapter(LocalDateTimeAdapter.class)
+    private LocalDateTime date;
 
-    @ManyToOne
-    @JoinColumn(name = "trip_id")
-    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "trip_id", nullable = false) // Оценка должна относиться к поездке
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     @XmlTransient
     private Trip trip;
 }

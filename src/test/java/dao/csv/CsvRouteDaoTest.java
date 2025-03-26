@@ -11,6 +11,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
@@ -39,7 +40,7 @@ class CsvRouteDaoTest {
         // Устанавливаем только поля, аннотированные @CsvBindByName
         route.setStartingPoint("City A");
         route.setEndingPoint("City B");
-        route.setDate(new Date());
+        route.setDate(LocalDateTime.now());
         route.setEstimatedDuration((short) 120); // 2 hours
         return route;
     }
