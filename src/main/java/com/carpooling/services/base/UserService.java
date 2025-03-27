@@ -1,78 +1,54 @@
 package com.carpooling.services.base;
 
-import com.carpooling.entities.database.Booking;
-import com.carpooling.entities.database.Trip;
 import com.carpooling.entities.database.User;
-import com.carpooling.exceptions.service.UserServiceException;
+import com.carpooling.exceptions.dao.DataAccessException;
+import com.carpooling.exceptions.service.AuthenticationException;
+import com.carpooling.exceptions.service.OperationNotSupportedException;
+import com.carpooling.exceptions.service.RegistrationException;
 
-import java.util.List;
 import java.util.Optional;
 
 /**
- * Интерфейс для работы с пользователями.
- * Предоставляет методы для регистрации, авторизации, получения и обновления данных пользователя.
+ * Сервис для управления пользователями.
+ * Содержит бизнес-логику, связанную с пользователями.
  */
 public interface UserService {
 
     /**
-     * Регистрация нового пользователя.
+     * Регистрирует нового пользователя.
+     * Может включать проверку уникальности email (если DAO поддерживает).
+     * Должен включать хеширование пароля перед сохранением.
      *
-     * @param user Пользователь для регистрации.
-     * @return ID зарегистрированного пользователя.
-     * @throws UserServiceException Если произошла ошибка при регистрации.
+     * @param user Объект User с данными для регистрации (пароль в открытом виде).
+     * @return ID созданного пользователя.
+     * @throws RegistrationException Если регистрация не удалась (например, email занят).
+     * @throws DataAccessException   Если произошла ошибка доступа к данным.
      */
-    String registerUser(User user) throws UserServiceException;
+    String registerUser(User user) throws RegistrationException, DataAccessException;
 
     /**
-     * Получение пользователя по ID.
-     *
-     * @param userId ID пользователя.
-     * @return Пользователь, если найден.
-     * @throws UserServiceException Если пользователь не найден или произошла ошибка.
-     */
-    Optional<User> getUserById(String userId) throws UserServiceException;
-
-    /**
-     * Получение пользователя по email.
-     *
-     * @param email Email пользователя.
-     * @return Пользователь, если найден.
-     * @throws UserServiceException Если пользователь не найден или произошла ошибка.
-     */
-    Optional<User> getUserByEmail(String email) throws UserServiceException;
-
-    /**
-     * Обновление данных пользователя.
-     *
-     * @param user Пользователь с обновленными данными.
-     * @throws UserServiceException Если произошла ошибка при обновлении.
-     */
-    void updateUser(User user) throws UserServiceException;
-
-    /**
-     * Удаление пользователя по ID.
-     *
-     * @param userId ID пользователя.
-     * @throws UserServiceException Если произошла ошибка при удалении.
-     */
-    void deleteUser(String userId) throws UserServiceException;
-
-    /**
-     * Аутентификация пользователя по email и паролю.
+     * Аутентифицирует пользователя по email и паролю.
+     * Сравнивает предоставленный пароль с хешем в хранилище.
      *
      * @param email    Email пользователя.
-     * @param password Пароль пользователя.
-     * @return Пользователь, если аутентификация успешна.
-     * @throws UserServiceException Если аутентификация не удалась или произошла ошибка.
+     * @param password Пароль пользователя (в открытом виде).
+     * @return Объект User в случае успеха.
+     * @throws AuthenticationException      Если email не найден или пароль неверный.
+     * @throws OperationNotSupportedException Если текущее хранилище не поддерживает поиск по email.
+     * @throws DataAccessException          Если произошла ошибка доступа к данным.
      */
-    Optional<User> authenticateUser(String email, String password) throws UserServiceException;
+    User loginUser(String email, String password) throws AuthenticationException, OperationNotSupportedException, DataAccessException;
 
     /**
-     * Изменение пароля пользователя.
+     * Получает пользователя по ID.
      *
-     * @param userId      ID пользователя.
-     * @param newPassword Новый пароль.
-     * @throws UserServiceException Если произошла ошибка при изменении пароля.
+     * @param userId ID пользователя.
+     * @return Optional с пользователем, если найден.
+     * @throws DataAccessException Если произошла ошибка доступа к данным.
      */
-    void changePassword(String userId, String newPassword) throws UserServiceException;
+    Optional<User> getUserById(String userId) throws DataAccessException;
+
+    // Можно добавить другие методы, например:
+    // void updateUserProfile(User user) throws UserNotFoundException, DataAccessException;
+    // void changePassword(String userId, String oldPassword, String newPassword) throws AuthenticationException, UserNotFoundException, DataAccessException;
 }

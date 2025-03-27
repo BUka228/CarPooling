@@ -2,98 +2,87 @@ package com.carpooling.dao.postgres;
 
 import com.carpooling.dao.base.RatingDao;
 import com.carpooling.entities.database.Rating;
+import com.carpooling.entities.database.Trip;
 import com.carpooling.exceptions.dao.DataAccessException;
-import com.carpooling.utils.HibernateUtil;
-import lombok.AllArgsConstructor;
+import jakarta.persistence.PersistenceException;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Hibernate;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
-import org.hibernate.Transaction;
-import org.jetbrains.annotations.NotNull;
+import org.hibernate.query.Query;
 
-import java.util.Optional;
-import java.util.UUID;
-import org.hibernate.HibernateException;
+import java.util.*;
 
+import static com.carpooling.constants.Constants.FIND_RATING_BY_USER_AND_TRIP_HQL;
 
 @Slf4j
-@AllArgsConstructor
-public class PostgresRatingDao implements RatingDao {
+public class PostgresRatingDao extends AbstractPostgresDao<Rating, UUID> implements RatingDao {
 
-    private final SessionFactory sessionFactory;
+    public PostgresRatingDao(SessionFactory sessionFactory) {
+        super(sessionFactory, Rating.class);
+    }
 
     @Override
     public String createRating(Rating rating) throws DataAccessException {
-        Transaction transaction = null;
-        try (Session session = sessionFactory.openSession()) {
-            transaction = session.beginTransaction();
-            session.persist(rating);
-            transaction.commit();
-            log.info("Rating created successfully: {}", rating.getId());
-            return rating.getId().toString();
-        } catch (HibernateException e) {
-            if (transaction != null) transaction.rollback();
-            log.error("Error creating rating: {}", e.getMessage());
-            throw new DataAccessException("Error creating rating", e);
+        persistEntity(rating);
+        if (rating.getId() == null) {
+            throw new DataAccessException("Failed to generate ID for rating");
         }
+        return rating.getId().toString();
     }
 
     @Override
     public Optional<Rating> getRatingById(String id) throws DataAccessException {
-        try (Session session = sessionFactory.openSession()) {
-            UUID uuid = UUID.fromString(id);
-            Rating rating = session.get(Rating.class, uuid);
-            if (rating != null) {
-                log.info("Rating found: {}", id);
-            } else {
-                log.warn("Rating not found: {}", id);
-            }
-            return Optional.ofNullable(rating);
-        } catch (HibernateException e) {
-            log.error("Error reading rating: {}", e.getMessage());
-            throw new DataAccessException("Error reading rating", e);
-        } catch (IllegalArgumentException e) {
-            log.error("Invalid UUID format: {}", id);
-            throw new DataAccessException("Invalid UUID format", e);
-        }
+        UUID uuid = parseUUID(id, "rating id");
+        // Простой get, т.к. Rating обычно не требует join fetch по умолчанию
+        return findEntityById(uuid);
     }
 
     @Override
     public void updateRating(Rating rating) throws DataAccessException {
-        Transaction transaction = null;
-        try (Session session = sessionFactory.openSession()) {
-            transaction = session.beginTransaction();
-            session.merge(rating);
-            transaction.commit();
-            log.info("Rating updated successfully: {}", rating.getId());
-        } catch (HibernateException e) {
-            if (transaction != null) transaction.rollback();
-            log.error("Error updating rating: {}", e.getMessage());
-            throw new DataAccessException("Error updating rating", e);
-        }
+        mergeEntity(rating);
     }
 
     @Override
     public void deleteRating(String id) throws DataAccessException {
-        Transaction transaction = null;
-        try (Session session = sessionFactory.openSession()) {
-            transaction = session.beginTransaction();
-            UUID uuid = UUID.fromString(id);
-            Rating rating = session.get(Rating.class, uuid);
-            if (rating != null) {
-                session.remove(rating);
-                transaction.commit();
-                log.info("Rating deleted successfully: {}", id);
-            } else {
-                log.warn("Rating not found for deletion: {}", id);
-            }
-        } catch (HibernateException e) {
-            if (transaction != null) transaction.rollback();
-            log.error("Error deleting rating: {}", e.getMessage());
-            throw new DataAccessException("Error deleting rating", e);
-        } catch (IllegalArgumentException e) {
-            log.error("Invalid UUID format: {}", id);
-            throw new DataAccessException("Invalid UUID format", e);
+        UUID uuid = parseUUID(id, "rating id");
+        deleteEntityById(uuid);
+    }
+
+    @Override
+    public List<Rating> findRatingsByTripId(String tripId) throws DataAccessException {
+        log.debug("Finding ratings for trip ID (using Trip entity collection): {}", tripId);
+        UUID tripUUID = parseUUID(tripId, "trip ID");
+        try {
+            Session session = getCurrentSession();
+            // Используем getReference, чтобы не грузить всю поездку, если она не нужна
+            Trip trip = session.getReference(Trip.class, tripUUID);
+            Hibernate.initialize(trip.getRatings()); // Инициализируем коллекцию
+            log.info("Retrieved {} ratings for trip ID {}", trip.getRatings().size(), tripId);
+            return new ArrayList<>(trip.getRatings()); // Возвращаем копию
+        } catch (jakarta.persistence.EntityNotFoundException e) {
+            log.warn("Trip not found for ID: {}, cannot retrieve ratings.", tripId);
+            return Collections.emptyList();
+        } catch (PersistenceException e) {
+            log.error("Error finding ratings for trip {}: {}", tripId, e.getMessage());
+            throw new DataAccessException("Error finding ratings by trip", e);
+        }
+    }
+
+    @Override
+    public Optional<Rating> findRatingByUserAndTrip(String userId, String tripId) throws DataAccessException {
+        log.debug("Finding rating for user ID {} and trip ID {}", userId, tripId);
+        UUID userUUID = parseUUID(userId, "user ID");
+        UUID tripUUID = parseUUID(tripId, "trip ID");
+        try {
+            Session session = getCurrentSession();
+            Query<Rating> query = session.createQuery(FIND_RATING_BY_USER_AND_TRIP_HQL, Rating.class);
+            query.setParameter("userId", userUUID);
+            query.setParameter("tripId", tripUUID);
+            return query.uniqueResultOptional();
+        } catch (PersistenceException e) {
+            log.error("Error finding rating by user {} and trip {}: {}", userId, tripId, e.getMessage());
+            throw new DataAccessException("Error finding rating by user and trip", e);
         }
     }
 }

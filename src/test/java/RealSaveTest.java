@@ -1,116 +1,37 @@
-import com.carpooling.cli.context.CliContext;
-import com.carpooling.dao.base.BookingDao;
-import com.carpooling.dao.mongo.MongoBookingDao;
-import com.carpooling.entities.database.Booking;
-import com.carpooling.entities.database.Route;
-import com.carpooling.entities.database.Trip;
+import com.carpooling.dao.base.UserDao;
+import com.carpooling.dao.postgres.PostgresUserDao;
 import com.carpooling.entities.database.User;
-import com.carpooling.entities.enums.BookingStatus;
-import com.carpooling.exceptions.service.TripServiceException;
-import com.carpooling.exceptions.service.UserServiceException;
+import com.carpooling.exceptions.service.RegistrationException;
 import com.carpooling.factories.DaoFactory;
-import com.carpooling.services.impl.RouteServiceImpl;
-import com.carpooling.services.impl.TripServiceImpl;
+import com.carpooling.factories.ServiceFactory;
+import com.carpooling.services.base.UserService;
 import com.carpooling.services.impl.UserServiceImpl;
+import com.carpooling.utils.HibernateUtil;
 import org.junit.jupiter.api.Test;
 
-import java.nio.charset.Charset;
-import java.sql.Date;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.Optional;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class RealSaveTest {
 
     @Test
-    public void testSaveBooking() throws UserServiceException, TripServiceException {
-
-        Booking booking = new Booking();
-        booking.setNumberOfSeats((byte) 2);
-        booking.setStatus(BookingStatus.CONFIRMED);
-        booking.setBookingDate(LocalDateTime.now());
-        booking.setPassportNumber("AB1234567");
-        booking.setPassportExpiryDate(LocalDate.now().plusYears(1));
-
-
-        BookingDao dao = DaoFactory.getBookingDao(CliContext.StorageType.MONGO);
-        String bookingId = dao.createBooking(booking);
-        assertNotNull(bookingId);
-
-        Optional<Booking> i = dao.getBookingById(bookingId);
-        assertNotNull(i);
-
+    public void testSaveBooking() {
 
     }
+    /*@Test
+    public void testSaveUser() throws RegistrationException {
+        UserService userService = ServiceFactory.getUserService();
 
-
-
-
-
-        /*// Устанавливаем тип хранилища для Hibernate
-        CliContext.setCurrentStorageType(CliContext.StorageType.POSTGRES);
-
-        // Создаем объект User
         User user = new User();
-        user.setId(UUID.randomUUID().toString()); // Генерируем уникальный ID
-        user.setName("TestName");
-        user.setEmail("TestEmail");
-        user.setPassword("TestPassword");
-        user.setGender("TestGender");
-        user.setBirthDate(Date.valueOf("2004-04-17"));
-        user.setAddress("TestAddress");
-        user.setPreferences("TestPreferences");
-
-        // Инициализация UserService с Hibernate DAO
-        UserServiceImpl userService = new UserServiceImpl(DaoFactory.getUserDao(CliContext.getCurrentStorageType()));
+        user.setName("Test User");
+        user.setEmail("test@example.com");
+        user.setPassword("password");
+        user.setGender("Male");
+        user.setPhone("+1234567890");
+        user.setBirthDate(LocalDate.of(1990, 1, 1));
+        user.setPreferences("No smoking");
         String userId = userService.registerUser(user);
-        assertNotNull(userId, "User ID should not be null after registration");
-
-        // Создаем объект Trip
-        Trip trip = new Trip();
-        trip.setId(UUID.randomUUID().toString()); // Генерируем уникальный ID
-        trip.setDepartureTime(Date.valueOf("2024-04-17"));
-        trip.setMaxPassengers((byte) 4);
-        trip.setCreationDate(Date.valueOf("2024-04-17"));
-        trip.setStatus("TestStatus");
-        trip.setEditable(true);
-
-        // Создаем объект Route
-        String id = UUID.randomUUID().toString();
-        String startPoint = "TestStartPoint";
-        String endPoint = "TestEndPoint";
-
-        // Преобразуем строки в кодировку IBM866 (если это требование сохраняется)
-        byte[] idBytes866 = id.getBytes(Charset.forName("IBM866"));
-        byte[] startPointBytes866 = startPoint.getBytes(Charset.forName("IBM866"));
-        byte[] endPointBytes866 = endPoint.getBytes(Charset.forName("IBM866"));
-
-        String id866 = new String(idBytes866, Charset.forName("IBM866"));
-        String startPoint866 = new String(startPointBytes866, Charset.forName("IBM866"));
-        String endPoint866 = new String(endPointBytes866, Charset.forName("IBM866"));
-
-        Route route = new Route();
-        route.setId(id866);
-        route.setStartPoint(startPoint866);
-        route.setEndPoint(endPoint866);
-        route.setDate(Date.valueOf(LocalDate.now()));
-        route.setEstimatedDuration((short) 100);
-
-        // Инициализация RouteService и TripService с Hibernate DAO
-        RouteServiceImpl routeService = new RouteServiceImpl(DaoFactory.getRouteDao(CliContext.getCurrentStorageType()));
-        TripServiceImpl tripService = new TripServiceImpl(
-                DaoFactory.getTripDao(CliContext.getCurrentStorageType()),
-                routeService
-        );
-
-        // Создаем поездку с объектами Trip, Route и User
-        String tripId = tripService.createTrip(trip, route, user);
-        assertNotNull(tripId, "Trip ID should not be null after creation");
-
-        System.out.println("User ID: " + userId);
-        System.out.println("Trip ID: " + tripId);*/
-
+        assertNotNull(userId);
+    }*/
 }

@@ -3,97 +3,68 @@ package com.carpooling.dao.postgres;
 import com.carpooling.dao.base.UserDao;
 import com.carpooling.entities.database.User;
 import com.carpooling.exceptions.dao.DataAccessException;
-import com.carpooling.utils.HibernateUtil;
-import lombok.AllArgsConstructor;
+import com.carpooling.exceptions.service.OperationNotSupportedException;
+import jakarta.persistence.PersistenceException;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
-import org.hibernate.Transaction;
 
 import java.util.Optional;
 import java.util.UUID;
 
-
-import org.hibernate.HibernateException;
-
 @Slf4j
-@AllArgsConstructor
-public class PostgresUserDao implements UserDao {
+public class PostgresUserDao extends AbstractPostgresDao<User, UUID> implements UserDao {
 
-    private final SessionFactory sessionFactory;
+    public PostgresUserDao(SessionFactory sessionFactory) {
+        super(sessionFactory, User.class);
+    }
 
     @Override
     public String createUser(User user) throws DataAccessException {
-        Transaction transaction = null;
-        try (Session session = sessionFactory.openSession()) {
-            transaction = session.beginTransaction();
-            session.persist(user);
-            transaction.commit();
-            log.info("User created successfully: {}", user.getId());
-            return user.getId().toString();
-        } catch (HibernateException e) {
-            if (transaction != null) transaction.rollback();
-            log.error("Error creating user: {}", e.getMessage());
-            throw new DataAccessException("Error creating user", e) {};
+        persistEntity(user);
+        // ID должен быть доступен после persist
+        if (user.getId() == null) {
+            // Этого не должно произойти, если генерация ID работает
+            log.error("User ID was null after persist! User: {}", user);
+            throw new DataAccessException("Failed to generate ID for user");
         }
+        return user.getId().toString();
     }
 
     @Override
     public Optional<User> getUserById(String id) throws DataAccessException {
-        try (Session session = sessionFactory.openSession()) {
-            UUID uuid = UUID.fromString(id);
-            User user = session.get(User.class, uuid);
-            if (user != null) {
-                log.info("User found: {}", id);
-            } else {
-                log.warn("User not found: {}", id);
-            }
-            return Optional.ofNullable(user);
-        } catch (HibernateException e) {
-            log.error("Error reading user: {}", e.getMessage());
-            throw new DataAccessException("Error reading user", e) {};
-        } catch (IllegalArgumentException e) {
-            log.error("Invalid UUID format: {}", id);
-            throw new DataAccessException("Invalid UUID format", e) {};
-        }
+        UUID uuid = parseUUID(id, "user id");
+        return findEntityById(uuid);
     }
 
     @Override
-    public void updateUser(User userRecord) throws DataAccessException {
-        Transaction transaction = null;
-        try (Session session = sessionFactory.openSession()) {
-            transaction = session.beginTransaction();
-            session.merge(userRecord);
-            transaction.commit();
-            log.info("User updated successfully: {}", userRecord.getId());
-        } catch (HibernateException e) {
-            if (transaction != null) transaction.rollback();
-            log.error("Error updating user: {}", e.getMessage());
-            throw new DataAccessException("Error updating user", e) {};
-        }
+    public void updateUser(User user) throws DataAccessException {
+        mergeEntity(user);
     }
 
     @Override
     public void deleteUser(String id) throws DataAccessException {
-        Transaction transaction = null;
-        try (Session session = sessionFactory.openSession()) {
-            transaction = session.beginTransaction();
-            UUID uuid = UUID.fromString(id);
-            User user = session.get(User.class, uuid);
-            if (user != null) {
-                session.remove(user);
-                transaction.commit();
-                log.info("User deleted successfully: {}", id);
-            } else {
-                log.warn("User not found for deletion: {}", id);
-            }
-        } catch (HibernateException e) {
-            if (transaction != null) transaction.rollback();
-            log.error("Error deleting user: {}", e.getMessage());
-            throw new DataAccessException("Error deleting user", e) {};
-        } catch (IllegalArgumentException e) {
-            log.error("Invalid UUID format: {}", id);
-            throw new DataAccessException("Invalid UUID format", e) {};
+        UUID uuid = parseUUID(id, "user id");
+        deleteEntityById(uuid);
+    }
+
+    @Override
+    public Optional<User> findByEmail(String email) throws DataAccessException, OperationNotSupportedException {
+        log.debug("Finding user by email (using NaturalId): {}", email);
+        if (email == null || email.isBlank()) {
+            return Optional.empty();
+        }
+        try {
+            // NaturalId API работает с текущей сессией
+            return getCurrentSession().byNaturalId(User.class)
+                    .using("email", email)
+                    .loadOptional();
+        } catch (UnsupportedOperationException e) { // NaturalId может кинуть это
+            log.error("@NaturalId lookup failed for email {}: {}", email, e.getMessage());
+            throw new OperationNotSupportedException("NaturalId lookup not configured correctly for User email.", e);
+        } catch (PersistenceException e) { // Общая ошибка Hibernate/JPA
+            log.error("Error finding user by email {}: {}", email, e.getMessage());
+            throw new DataAccessException("Error finding user by email", e);
         }
     }
 }

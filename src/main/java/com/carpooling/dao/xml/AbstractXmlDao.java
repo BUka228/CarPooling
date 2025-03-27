@@ -1,13 +1,16 @@
 package com.carpooling.dao.xml;
 
 
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.Marshaller;
+import jakarta.xml.bind.Unmarshaller;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.Unmarshaller;
+
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -24,6 +27,7 @@ import static com.carpooling.constants.ErrorMessages.ERROR_INIT_FILE;
  * @param <T> Тип сущности (например, TripRecord, UserRecord и т.д.).
  * @param <W> Тип обертки (Wrapper) для списка сущностей.
  */
+@Slf4j
 public abstract class AbstractXmlDao<T, W> {
 
     private final String filePath;
@@ -40,34 +44,51 @@ public abstract class AbstractXmlDao<T, W> {
     public AbstractXmlDao(Class<T> type, Class<W> wrapperType, String filePath) {
         this.filePath = filePath;
         try {
-            // Инициализация JAXB контекста
+            log.debug("Initializing XML DAO for type {} with file path: {}", type.getSimpleName(), filePath);
             JAXBContext context = JAXBContext.newInstance(wrapperType, type);
             this.marshaller = context.createMarshaller();
             this.marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
             this.unmarshaller = context.createUnmarshaller();
-
-            // Инициализация файла (после инициализации marshaller и unmarshaller)
-            initializeFile();
+            initializeFile(); // Инициализация файла
         } catch (JAXBException e) {
+            log.error("JAXB context initialization failed for {}", filePath, e);
+            throw new RuntimeException("JAXB context initialization failed", e);
+        } catch (IOException e) { // Ловим IOException из initializeFile
+            log.error("Failed to initialize XML file {}", filePath, e);
             throw new RuntimeException(ERROR_INIT_FILE, e);
         }
     }
 
     /**
-     * Создает файл по указанному пути, если он не существует.
-     * Если файл создается, он инициализируется пустой оберткой.
+     * Создает файл по указанному пути и необходимые родительские директории,
+     * если они не существуют. Если файл создается, он инициализируется
+     * пустой оберткой.
      *
-     * @throws RuntimeException Если произошла ошибка при создании файла или записи данных.
+     * @throws IOException Если произошла ошибка при создании директорий.
+     * @throws JAXBException Если произошла ошибка при записи начальной пустой обертки.
      */
-    private void initializeFile() {
+    private void initializeFile() throws IOException, JAXBException {
         File file = new File(filePath);
         if (!file.exists()) {
-            try {
-                // Инициализируем файл пустой оберткой, используя метод writeAll
-                writeAll(new ArrayList<>());
-            } catch (JAXBException e) {
-                throw new RuntimeException(ERROR_INIT_FILE, e);
+            log.info("XML file not found, attempting to create: {}", filePath);
+            // --- ИЗМЕНЕНИЕ: Создаем родительские директории ---
+            File parentDir = file.getParentFile();
+            if (parentDir != null && !parentDir.exists()) {
+                log.debug("Creating parent directories for: {}", parentDir.getAbsolutePath());
+                if (!parentDir.mkdirs()) {
+                    // Если mkdirs вернул false, директории не созданы (возможно, нет прав)
+                    throw new IOException("Could not create parent directories for: " + parentDir.getAbsolutePath());
+                }
+                log.info("Parent directories created successfully.");
             }
+            // --- КОНЕЦ ИЗМЕНЕНИЯ ---
+
+            // Пытаемся записать пустую обертку, чтобы создать файл
+            log.debug("Initializing XML file with empty wrapper: {}", filePath);
+            writeAll(new ArrayList<>()); // Это создаст файл
+            log.info("XML file initialized successfully: {}", filePath);
+        } else {
+            log.debug("XML file already exists: {}", filePath);
         }
     }
 
@@ -80,9 +101,20 @@ public abstract class AbstractXmlDao<T, W> {
      */
     protected List<T> readAll() throws JAXBException {
         File file = new File(filePath);
-        W wrapper = (W) unmarshaller.unmarshal(file);
-        List<T> items = getItemsFromWrapper(wrapper);
-        return items == null ? new ArrayList<>() : items;
+        // Добавляем проверку на существование файла перед чтением, хотя initializeFile должен его создать
+        if (!file.exists() || file.length() == 0) {
+            log.warn("XML file is missing or empty, returning empty list: {}", filePath);
+            return new ArrayList<>(); // Возвращаем пустой список, если файла нет или он пуст
+        }
+        try {
+            W wrapper = (W) unmarshaller.unmarshal(file);
+            List<T> items = getItemsFromWrapper(wrapper);
+            log.trace("Read {} items from {}", (items != null ? items.size() : 0), filePath);
+            return items == null ? new ArrayList<>() : items;
+        } catch (JAXBException e) {
+            log.error("Failed to read or unmarshal XML file: {}", filePath, e);
+            throw e; // Перебрасываем для обработки выше
+        }
     }
 
     /**

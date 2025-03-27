@@ -3,6 +3,7 @@ package com.carpooling.dao.csv;
 import com.carpooling.dao.base.UserDao;
 import com.carpooling.entities.database.User;
 import com.carpooling.exceptions.dao.DataAccessException;
+import com.carpooling.exceptions.service.OperationNotSupportedException;
 import com.opencsv.exceptions.CsvDataTypeMismatchException;
 import com.opencsv.exceptions.CsvRequiredFieldEmptyException;
 import lombok.extern.slf4j.Slf4j;
@@ -87,5 +88,10 @@ public class CsvUserDao extends AbstractCsvDao<User> implements UserDao {
             log.error("Error deleting user: {}", e.getMessage());
             throw new DataAccessException("Error deleting user", e);
         }
+    }
+
+    @Override
+    public Optional<User> findByEmail(String email) throws DataAccessException, OperationNotSupportedException {
+        return Optional.empty();
     }
 }

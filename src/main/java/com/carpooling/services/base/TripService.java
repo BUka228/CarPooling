@@ -1,93 +1,74 @@
 package com.carpooling.services.base;
 
-import com.carpooling.entities.database.Route;
 import com.carpooling.entities.database.Trip;
-import com.carpooling.exceptions.service.TripServiceException;
+import com.carpooling.exceptions.dao.DataAccessException;
+import com.carpooling.exceptions.service.OperationNotSupportedException;
+import com.carpooling.exceptions.service.TripException;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 /**
- * Интерфейс для работы с поездками.
- * Предоставляет методы для создания, получения, обновления и удаления поездок.
+ * Сервис для управления поездками.
+ * Координирует создание поездок, маршрутов и связь с пользователями.
  */
 public interface TripService {
 
     /**
-     * Создание новой поездки.
+     * Создает новую поездку.
+     * Включает создание связанного маршрута (если он уникален для поездки).
      *
-     * @param trip   Поездка для создания.
+     * @param userId            ID пользователя-создателя.
+     * @param startPoint        Начальная точка маршрута.
+     * @param endPoint          Конечная точка маршрута.
+     * @param departureDateTime Дата и время отправления.
+     * @param maxPassengers     Максимальное количество пассажиров.
      * @return ID созданной поездки.
-     * @throws TripServiceException Если произошла ошибка при создании.
+     * @throws TripException      Если произошла ошибка бизнес-логики (например, пользователь не найден).
+     * @throws DataAccessException Если произошла ошибка доступа к данным при сохранении маршрута или поездки.
      */
-    String createTrip(Trip trip) throws TripServiceException;
+    String createTrip(String userId, String startPoint, String endPoint,
+                      LocalDateTime departureDateTime, byte maxPassengers)
+            throws TripException, DataAccessException;
 
     /**
-     * Получение поездки по ID.
+     * Получает поездку по ID.
      *
      * @param tripId ID поездки.
-     * @return Поездка, если найдена.
-     * @throws TripServiceException Если поездка не найдена или произошла ошибка.
+     * @return Optional с поездкой, если найдена.
+     * @throws DataAccessException Если произошла ошибка доступа к данным.
      */
-    Optional<Trip> getTripById(String tripId) throws TripServiceException;
+    Optional<Trip> getTripById(String tripId) throws DataAccessException;
+
+    // --- Методы-заглушки или для будущей реализации ---
 
     /**
-     * Получение всех поездок.
+     * Ищет поездки по заданным критериям (например, точки маршрута, дата).
+     * ЗАГЛУШКА: Текущие DAO не поддерживают поиск.
      *
-     * @return Список всех поездок.
-     * @throws TripServiceException Если произошла ошибка при получении.
+     * @param startPoint (Опционально) Начальная точка.
+     * @param endPoint   (Опционально) Конечная точка.
+     * @param date       (Опционально) Дата поездки.
+     * @return Список найденных поездок (пустой список, если не поддерживается).
+     * @throws OperationNotSupportedException Если поиск не поддерживается текущим хранилищем.
+     * @throws DataAccessException          Если произошла ошибка доступа к данным.
      */
-    List<Trip> getAllTrips() throws TripServiceException;
+    List<Trip> findTrips(String startPoint, String endPoint, LocalDate date)
+            throws OperationNotSupportedException, DataAccessException; // Добавили LocalDate
 
     /**
-     * Обновление данных поездки.
+     * Отменяет поездку.
+     * ЗАГЛУШКА: Требует логики изменения статуса и, возможно, уведомления пассажиров.
      *
-     * @param trip   Поездка с обновленными данными.
-     * @throws TripServiceException Если произошла ошибка при обновлении.
+     * @param tripId ID поездки для отмены.
+     * @param userId ID пользователя, пытающегося отменить (для проверки прав).
+     * @throws TripException      Если поездка не найдена, пользователь не имеет прав или отмена невозможна.
+     * @throws OperationNotSupportedException Если обновление статуса не поддерживается.
+     * @throws DataAccessException          Если произошла ошибка доступа к данным.
      */
-    void updateTrip(Trip trip) throws TripServiceException;
+    void cancelTrip(String tripId, String userId)
+            throws TripException, OperationNotSupportedException, DataAccessException;
 
-    /**
-     * Удаление поездки по ID.
-     *
-     * @param tripId ID поездки.
-     * @throws TripServiceException Если произошла ошибка при удалении.
-     */
-    void deleteTrip(String tripId) throws TripServiceException;
-
-    /**
-     * Получение поездок по ID пользователя.
-     *
-     * @param userId ID пользователя.
-     * @return Список поездок пользователя.
-     * @throws TripServiceException Если произошла ошибка при получении.
-     */
-    List<Trip> getTripsByUser(String userId) throws TripServiceException;
-
-    /**
-     * Получение поездок по статусу.
-     *
-     * @param status Статус поездки.
-     * @return Список поездок с указанным статусом.
-     * @throws TripServiceException Если произошла ошибка при получении.
-     */
-    List<Trip> getTripsByStatus(String status) throws TripServiceException;
-
-    /**
-     * Получение поездок по дате создания.
-     *
-     * @param date Дата создания поездки.
-     * @return Список поездок с указанной датой создания.
-     * @throws TripServiceException Если произошла ошибка при получении.
-     */
-    List<Trip> getTripsByCreationDate(String date) throws TripServiceException;
-
-    /**
-     * Получение поездок по маршруту.
-     *
-     * @param routeId ID маршрута.
-     * @return Список поездок с указанным маршрутом.
-     * @throws TripServiceException Если произошла ошибка при получении.
-     */
-    List<Trip> getTripsByRoute(String routeId) throws TripServiceException;
 }

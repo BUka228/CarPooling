@@ -3,6 +3,7 @@ package com.carpooling.dao.mongo;
 import com.carpooling.dao.base.RatingDao;
 import com.carpooling.entities.database.Rating;
 import com.carpooling.exceptions.dao.DataAccessException;
+import com.carpooling.exceptions.service.OperationNotSupportedException;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.result.DeleteResult;
@@ -11,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -85,6 +87,16 @@ public class MongoRatingDao extends AbstractMongoDao<Rating> implements RatingDa
             log.error("Error deleting rating: {}", e.getMessage());
             throw new DataAccessException("Error deleting rating", e);
         }
+    }
+
+    @Override
+    public List<Rating> findRatingsByTripId(String tripId) throws DataAccessException, OperationNotSupportedException {
+        return List.of();
+    }
+
+    @Override
+    public Optional<Rating> findRatingByUserAndTrip(String userId, String tripId) throws DataAccessException, OperationNotSupportedException {
+        return Optional.empty();
     }
 }
 

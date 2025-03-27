@@ -4,6 +4,11 @@ import com.carpooling.adapters.LocalDateAdapter;
 import com.carpooling.adapters.LocalDateTimeAdapter;
 import com.carpooling.entities.enums.BookingStatus;
 import com.opencsv.bean.CsvDate;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlRootElement;
+import jakarta.xml.bind.annotation.XmlTransient;
+import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import lombok.*;
 
 import java.time.LocalDate;
@@ -15,8 +20,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.opencsv.bean.CsvBindByName;
 import jakarta.persistence.*;
 
-import javax.xml.bind.annotation.*;
-import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import java.util.Date;
 import java.util.UUID;
 

@@ -1,84 +1,53 @@
 package com.carpooling.services.base;
 
 import com.carpooling.entities.database.Rating;
-import com.carpooling.entities.database.Trip;
-import com.carpooling.exceptions.service.RatingServiceException;
+import com.carpooling.exceptions.dao.DataAccessException;
+import com.carpooling.exceptions.service.OperationNotSupportedException;
+import com.carpooling.exceptions.service.RatingException;
 
-import java.util.List;
+import java.util.List; // Для будущих методов
 import java.util.Optional;
 
 /**
- * Интерфейс для работы с оценками.
- * Предоставляет методы для создания, получения, обновления и удаления оценок.
+ * Сервис для управления оценками поездок.
  */
 public interface RatingService {
 
     /**
-     * Создание новой оценки.
+     * Создает новую оценку для поездки.
+     * Может включать проверку, что пользователь участвовал в поездке (заглушка).
      *
-     * @param rating Оценка для создания.
+     * @param userId  ID пользователя, оставляющего оценку.
+     * @param tripId  ID оцениваемой поездки.
+     * @param ratingValue Значение рейтинга (например, от 1 до 5).
+     * @param comment Комментарий (опционально).
      * @return ID созданной оценки.
-     * @throws RatingServiceException Если произошла ошибка при создании.
+     * @throws RatingException Если произошла ошибка (поездка/пользователь не найдены, невалидный рейтинг).
+     * @throws OperationNotSupportedException Если связанные проверки не поддерживаются.
+     * @throws DataAccessException Если произошла ошибка доступа к данным.
      */
-    String createRating(Rating rating) throws RatingServiceException;
+    String createRating(String userId, String tripId, int ratingValue, String comment)
+            throws RatingException, OperationNotSupportedException, DataAccessException;
 
     /**
-     * Получение оценки по ID.
+     * Получает оценку по ID.
      *
      * @param ratingId ID оценки.
-     * @return Оценка, если найдена.
-     * @throws RatingServiceException Если оценка не найдена или произошла ошибка.
+     * @return Optional с оценкой, если найдена.
+     * @throws DataAccessException Если произошла ошибка доступа к данным.
      */
-    Optional<Rating> getRatingById(String ratingId) throws RatingServiceException;
+    Optional<Rating> getRatingById(String ratingId) throws DataAccessException;
 
     /**
-     * Получение всех оценок.
-     *
-     * @return Список всех оценок.
-     * @throws RatingServiceException Если произошла ошибка при получении.
-     */
-    List<Rating> getAllRatings() throws RatingServiceException;
-
-    /**
-     * Обновление данных оценки.
-     *
-     * @param rating Оценка с обновленными данными.
-     * @throws RatingServiceException Если произошла ошибка при обновлении.
-     */
-    void updateRating(Rating rating) throws RatingServiceException;
-
-    /**
-     * Удаление оценки по ID.
-     *
-     * @param ratingId ID оценки.
-     * @throws RatingServiceException Если произошла ошибка при удалении.
-     */
-    void deleteRating(String ratingId) throws RatingServiceException;
-
-    /**
-     * Получение оценок по ID поездки.
+     * Получает все оценки для конкретной поездки.
+     * ЗАГЛУШКА: Требует метода поиска в DAO.
      *
      * @param tripId ID поездки.
-     * @return Список оценок для указанной поездки.
-     * @throws RatingServiceException Если произошла ошибка при получении.
+     * @return Список оценок (пустой, если не поддерживается).
+     * @throws OperationNotSupportedException Если поиск не поддерживается.
+     * @throws DataAccessException Если произошла ошибка доступа к данным.
      */
-    List<Rating> getRatingsByTrip(String tripId) throws RatingServiceException;
+    List<Rating> findRatingsByTripId(String tripId)
+            throws OperationNotSupportedException, DataAccessException;
 
-    /**
-     * Получение оценок по рейтингу.
-     *
-     * @param rating Рейтинг оценки.
-     * @return Список оценок с указанным рейтингом.
-     * @throws RatingServiceException Если произошла ошибка при получении.
-     */
-    List<Rating> getRatingsByRating(int rating) throws RatingServiceException;
-
-    /**
-     * Получение средней оценки поездки.
-     *
-     * @param tripId ID поездки.
-     * @return Средний рейтинг поездки.
-     * @throws RatingServiceException Если произошла ошибка при расчете.
-     */
-    double getAverageRatingForTrip(String tripId) throws RatingServiceException;
 }

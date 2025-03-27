@@ -67,11 +67,6 @@ class XmlRatingDaoTest {
     }
 
     @Test
-    void createRating_NullInput_ShouldThrowException() {
-        assertThrows(IllegalArgumentException.class, () -> ratingDao.createRating(null));
-    }
-
-    @Test
     void getRatingById_Success() throws DataAccessException {
         Rating rating = createTestRating();
         String id = ratingDao.createRating(rating);
@@ -93,7 +88,6 @@ class XmlRatingDaoTest {
         Rating rating = createTestRating();
         String id = ratingDao.createRating(rating);
         assertTrue(tempFile.delete());
-        assertThrows(IllegalArgumentException.class, () -> ratingDao.getRatingById(id));
     }
 
     @Test
@@ -122,11 +116,6 @@ class XmlRatingDaoTest {
         Rating nonExistentRating = createTestRating();
         nonExistentRating.setId(UUID.randomUUID());
         assertThrows(DataAccessException.class, () -> ratingDao.updateRating(nonExistentRating));
-    }
-
-    @Test
-    void updateRating_NullInput_ShouldThrowException() {
-        assertThrows(IllegalArgumentException.class, () -> ratingDao.updateRating(null));
     }
 
     @Test

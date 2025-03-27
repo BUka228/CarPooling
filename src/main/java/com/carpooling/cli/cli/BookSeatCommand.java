@@ -1,104 +1,82 @@
 package com.carpooling.cli.cli;
 
 import com.carpooling.cli.context.CliContext;
-import com.carpooling.entities.database.Booking;
-import com.carpooling.entities.database.Trip;
-import com.carpooling.exceptions.service.BookingServiceException;
-import com.carpooling.exceptions.service.TripServiceException;
-import com.carpooling.exceptions.service.UserServiceException;
-import com.carpooling.factories.DaoFactory;
+import com.carpooling.exceptions.dao.DataAccessException;
+import com.carpooling.exceptions.service.BookingException;
+import com.carpooling.exceptions.service.OperationNotSupportedException;
+import com.carpooling.factories.ServiceFactory; // Используем ServiceFactory
 import com.carpooling.services.base.BookingService;
-import com.carpooling.services.base.TripService;
-import com.carpooling.services.base.UserService;
-import com.carpooling.services.impl.BookingServiceImpl;
-import com.carpooling.services.impl.RouteServiceImpl;
-import com.carpooling.services.impl.TripServiceImpl;
-import com.carpooling.services.impl.UserServiceImpl;
-import org.jetbrains.annotations.Contract;
-import org.jetbrains.annotations.NotNull;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
-import java.sql.Date;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Optional;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 
 @Command(name = "bookSeat", description = "Бронирование места в поездке")
 public class BookSeatCommand implements Runnable {
 
-    @Option(names = {"-t", "--tripId"}, description = "ID поездки", required = true)
-    private String tripId;
-
-    @Option(names = {"-s", "--seatCount"}, description = "Количество мест", required = true)
-    private byte seatCount;
-
-    @Option(names = {"-p", "--passportNumber"}, description = "Номер паспорта", required = true)
-    private String passportNumber;
-
-    @Option(names = {"-e", "--passportExpiryDate"}, description = "Дата окончания срока паспорта (гггг-ММ-дд)", required = true)
-    private String passportExpiryDate;
+    @Option(names = {"-t", "--tripId"}, required = true) private String tripId;
+    @Option(names = {"-s", "--seatCount"}, required = true) private byte seatCount;
+    @Option(names = {"-p", "--passportNumber"}) private String passportNumber;
+    @Option(names = {"-e", "--passportExpiryDate"}) private String passportExpiryDateStr;
 
     @Override
     public void run() {
-        /*// Инициализация сервисов
-        BookingService bookingService = new BookingServiceImpl(DaoFactory.getBookingDao(CliContext.getCurrentStorageType()));
-        TripService tripService = new TripServiceImpl(
-                DaoFactory.getTripDao(CliContext.getCurrentStorageType()),
-                new RouteServiceImpl(DaoFactory.getRouteDao(CliContext.getCurrentStorageType()))
-        );
-        UserService userService = new UserServiceImpl(DaoFactory.getUserDao(CliContext.getCurrentStorageType()));
-
         String currentUserId = CliContext.getCurrentUserId();
         if (currentUserId == null) {
-            System.err.println("Ошибка: Вы не авторизованы.");
+            System.err.println("Ошибка: Вы должны войти в систему (login).");
             return;
         }
+        System.out.println("Попытка бронирования мест пользователем ID: " + currentUserId + " на поездку ID: " + tripId);
 
         try {
-            // Получение объекта Trip по tripId
-            Optional<Trip> tripOptional = tripService.getTripById(tripId);
-            if (tripOptional.isEmpty()) {
-                System.err.println("Ошибка: Поездка с ID " + tripId + " не найдена.");
+            BookingService bookingService = ServiceFactory.getBookingService();
+
+            LocalDate passportExpiryDate = parseExpiryDate(); // Вынесли парсинг
+            if (passportExpiryDateStr != null && !passportExpiryDateStr.isBlank() && passportExpiryDate == null) {
                 return;
             }
-            Trip trip = tripOptional.get();
 
-            // Получение объекта User по currentUserId
-            Optional<User> userOptional = userService.getUserById(currentUserId);
-            if (userOptional.isEmpty()) {
-                System.err.println("Ошибка: Пользователь с ID " + currentUserId + " не найден.");
+            if (seatCount <= 0) {
+                System.err.println("Ошибка: Количество мест должно быть больше нуля.");
                 return;
             }
-            User user = userOptional.get();
 
-            // Создание объекта Booking
-            Booking booking = new Booking();
-            booking.setSeatCount(seatCount);
-            booking.setPassportNumber(passportNumber);
-            booking.setPassportExpiryDate(parseDate(passportExpiryDate)); // Преобразуем строку в Date
+            // Вызов сервиса
+            String bookingId = bookingService.createBooking(
+                    currentUserId,
+                    tripId,
+                    seatCount,
+                    passportNumber,
+                    passportExpiryDate
+            );
 
-            // Вызов метода createBooking с объектами Trip и User
-            String bookingId = bookingService.createBooking(booking, trip, user);
-            CliContext.setCurrentBookingId(bookingId);
-            System.out.println("Место забронировано с ID: " + bookingId);
-        } catch (IllegalArgumentException e) {
-            System.err.println(e.getMessage()); // Выводим сообщение об ошибке формата даты
-        } catch (BookingServiceException | TripServiceException | UserServiceException e) {
-            System.err.println("Ошибка при бронировании места: " + e.getMessage());
-        }*/
+            System.out.println("Места успешно забронированы!");
+            System.out.println("Booking ID: " + bookingId);
+            System.out.println("Используемое хранилище: " + CliContext.getCurrentStorageType());
+
+        } catch (BookingException e) {
+            System.err.println("Ошибка бронирования: " + e.getMessage());
+        } catch (OperationNotSupportedException e) {
+            System.err.println("Ошибка: Операция (" + e.getMessage() + ") не поддерживается текущим хранилищем ("+ CliContext.getCurrentStorageType() +").");
+        } catch (DataAccessException e) {
+            System.err.println("Ошибка доступа к данным: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("Произошла непредвиденная ошибка: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
-    // Метод для преобразования строки в Date
-    @NotNull
-    @Contract("_ -> new")
-    private Date parseDate(String date) {
+    // Helper для парсинга даты
+    private LocalDate parseExpiryDate() {
+        if (passportExpiryDateStr == null || passportExpiryDateStr.isBlank()) {
+            return null;
+        }
         try {
-            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
-            format.setLenient(false); // Запрещаем нестрогий разбор даты
-            return new Date(format.parse(date).getTime());
-        } catch (ParseException e) {
-            throw new IllegalArgumentException("Неверный формат даты: " + date);
+            return LocalDate.parse(passportExpiryDateStr);
+        } catch (DateTimeParseException e) {
+            System.err.println("Ошибка: Неверный формат даты окончания срока паспорта '" + passportExpiryDateStr + "'. Используйте гггг-ММ-дд.");
+            return null;
         }
     }
 }

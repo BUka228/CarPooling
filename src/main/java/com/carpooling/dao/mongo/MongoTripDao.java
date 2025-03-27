@@ -3,6 +3,7 @@ package com.carpooling.dao.mongo;
 import com.carpooling.dao.base.TripDao;
 import com.carpooling.entities.database.Trip;
 import com.carpooling.exceptions.dao.DataAccessException;
+import com.carpooling.exceptions.service.OperationNotSupportedException;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.result.DeleteResult;
@@ -11,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -84,5 +87,10 @@ public class MongoTripDao extends AbstractMongoDao<Trip> implements TripDao {
             log.error("Error deleting trip: {}", e.getMessage());
             throw new DataAccessException("Error deleting trip", e);
         }
+    }
+
+    @Override
+    public List<Trip> findTrips(String startPoint, String endPoint, LocalDate date) throws DataAccessException, OperationNotSupportedException {
+        return List.of();
     }
 }

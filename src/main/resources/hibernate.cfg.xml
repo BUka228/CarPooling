@@ -4,18 +4,46 @@
 
 <hibernate-configuration>
     <session-factory>
-        <property name="hibernate.dialect">org.hibernate.dialect.PostgreSQLDialect</property>
-        <!-- Подключение к PostgreSQL -->
+        <!-- JDBC Драйвер для PostgreSQL -->
         <property name="hibernate.connection.driver_class">org.postgresql.Driver</property>
         <property name="hibernate.connection.url">jdbc:postgresql://192.168.56.1:5432/CarPooling</property>
         <property name="hibernate.connection.username">postgres</property>
         <property name="hibernate.connection.password">11111111</property>
 
-        <!-- Настройки Hibernate -->
-        <property name="hibernate.show_sql">true</property>  <!-- Показывать SQL-запросы в логах -->
-        <property name="hibernate.format_sql">true</property> <!-- Форматировать SQL в логах -->
-        <property name="hibernate.hbm2ddl.auto">update</property>  <!-- Автоматическое обновление схемы -->
+        <!-- Диалект SQL для PostgreSQL -->
+        <property name="hibernate.dialect">org.hibernate.dialect.PostgreSQLDialect</property>
 
+        <!-- Управление схемой БД -->
+        <property name="hibernate.hbm2ddl.auto">update</property>
+
+        <!-- Показывать SQL запросы в логах -->
+        <property name="hibernate.show_sql">true</property>
+
+        <!-- Форматировать SQL запросы в логах -->
+        <property name="hibernate.format_sql">true</property>
+
+        <!-- Использовать комментарии в генерируемом SQL -->
+        <property name="hibernate.use_sql_comments">true</property>
+
+        <!-- Автоматическое обнаружение аннотированных классов -->
+        <!-- Оставляем, но явное маппирование ниже надежнее -->
         <property name="hibernate.archive.autodetection">class, hbm</property>
+
+        <!-- Размер Batch -->
+        <property name="hibernate.jdbc.batch_size">30</property>
+
+        <property name="hibernate.current_session_context_class">com.carpooling.hibernate.ThreadLocalSessionContext</property>
+
+
+        <mapping class="com.carpooling.entities.database.User"/>
+        <mapping class="com.carpooling.entities.database.Address"/> <!-- Embeddable тоже могут требовать маппинга -->
+        <mapping class="com.carpooling.entities.database.Trip"/>
+        <mapping class="com.carpooling.entities.database.Route"/>
+        <mapping class="com.carpooling.entities.database.Booking"/>
+        <mapping class="com.carpooling.entities.database.Rating"/>
+
+
+
+
     </session-factory>
 </hibernate-configuration>

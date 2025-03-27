@@ -3,15 +3,16 @@ package com.carpooling.dao.xml;
 import com.carpooling.dao.base.BookingDao;
 import com.carpooling.entities.database.Booking;
 import com.carpooling.exceptions.dao.DataAccessException;
+import com.carpooling.exceptions.service.OperationNotSupportedException;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlRootElement;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -83,6 +84,21 @@ public class XmlBookingDao extends AbstractXmlDao<Booking, XmlBookingDao.Booking
             log.error("Error deleting booking: {}", e.getMessage());
             throw new DataAccessException("Error deleting booking", e);
         }
+    }
+
+    @Override
+    public int countBookedSeatsForTrip(String tripId) throws DataAccessException, OperationNotSupportedException {
+        return 0;
+    }
+
+    @Override
+    public List<Booking> findBookingsByUserId(String userId) throws DataAccessException, OperationNotSupportedException {
+        return List.of();
+    }
+
+    @Override
+    public Optional<Booking> findBookingByUserAndTrip(String userId, String tripId) throws DataAccessException, OperationNotSupportedException {
+        return Optional.empty();
     }
 
     @Override

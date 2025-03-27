@@ -2,6 +2,7 @@ package com.carpooling.dao.base;
 
 import com.carpooling.entities.database.User;
 import com.carpooling.exceptions.dao.DataAccessException;
+import com.carpooling.exceptions.service.OperationNotSupportedException;
 
 import java.util.Optional;
 
@@ -42,4 +43,13 @@ public interface UserDao {
      * @throws DataAccessException Если произошла ошибка при удалении пользователя.
      */
     void deleteUser(String id) throws DataAccessException;
+
+    /**
+     * Находит пользователя по его email.
+     * @param email Email для поиска.
+     * @return Optional с пользователем, если найден.
+     * @throws DataAccessException Если произошла ошибка доступа к данным.
+     * @throws OperationNotSupportedException Если поиск по email не поддерживается текущим хранилищем.
+     */
+    Optional<User> findByEmail(String email) throws DataAccessException, OperationNotSupportedException;
 }

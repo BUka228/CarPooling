@@ -3,12 +3,14 @@ package com.carpooling.dao.csv;
 import com.carpooling.dao.base.TripDao;
 import com.carpooling.entities.database.Trip;
 import com.carpooling.exceptions.dao.DataAccessException;
+import com.carpooling.exceptions.service.OperationNotSupportedException;
 import com.opencsv.exceptions.CsvDataTypeMismatchException;
 import com.opencsv.exceptions.CsvRequiredFieldEmptyException;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -81,5 +83,10 @@ public class CsvTripDao extends AbstractCsvDao<Trip> implements TripDao {
             log.error("Error deleting trip: {}", e.getMessage());
             throw new DataAccessException("Error deleting trip", e);
         }
+    }
+
+    @Override
+    public List<Trip> findTrips(String startPoint, String endPoint, LocalDate date) throws DataAccessException, OperationNotSupportedException {
+        return List.of();
     }
 }

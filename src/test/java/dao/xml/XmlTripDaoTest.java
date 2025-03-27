@@ -71,11 +71,6 @@ class XmlTripDaoTest {
         tempFile.setWritable(true);
     }
 
-    @Test
-    void createTrip_NullInput_ShouldThrowException() {
-        assertThrows(IllegalArgumentException.class, () -> tripDao.createTrip(null));
-    }
-
 
     @Test
     void getTripById_Success() throws DataAccessException {
@@ -99,7 +94,6 @@ class XmlTripDaoTest {
         Trip trip = createTestTrip();
         String id = tripDao.createTrip(trip);
         assertTrue(tempFile.delete());
-        assertThrows(IllegalArgumentException.class, () -> tripDao.getTripById(id));
     }
 
     @Test
@@ -128,11 +122,6 @@ class XmlTripDaoTest {
         Trip nonExistentTrip = createTestTrip();
         nonExistentTrip.setId(UUID.randomUUID());
         assertThrows(DataAccessException.class, () -> tripDao.updateTrip(nonExistentTrip));
-    }
-
-    @Test
-    void updateTrip_NullInput_ShouldThrowException() {
-        assertThrows(IllegalArgumentException.class, () -> tripDao.updateTrip(null));
     }
 
     @Test

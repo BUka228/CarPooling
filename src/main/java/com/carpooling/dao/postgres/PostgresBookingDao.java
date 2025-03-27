@@ -1,100 +1,112 @@
 package com.carpooling.dao.postgres;
 
-
 import com.carpooling.dao.base.BookingDao;
 import com.carpooling.entities.database.Booking;
 import com.carpooling.exceptions.dao.DataAccessException;
-import com.carpooling.utils.HibernateUtil;
-import lombok.AllArgsConstructor;
+import jakarta.persistence.PersistenceException;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
-import org.hibernate.Transaction;
-import org.jetbrains.annotations.NotNull;
+import org.hibernate.query.Query;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.hibernate.HibernateException;
+import static com.carpooling.constants.Constants.*;
 
 @Slf4j
-@AllArgsConstructor
-public class PostgresBookingDao implements BookingDao {
-    
-    private final SessionFactory sessionFactory;
+public class PostgresBookingDao extends AbstractPostgresDao<Booking, UUID> implements BookingDao {
+
+    public PostgresBookingDao(SessionFactory sessionFactory) {
+        super(sessionFactory, Booking.class);
+    }
 
     @Override
     public String createBooking(Booking booking) throws DataAccessException {
-        Transaction transaction = null;
-        try (Session session = sessionFactory.openSession()) {
-            transaction = session.beginTransaction();
-            session.persist(booking);
-            transaction.commit();
-            log.info("Booking created successfully: {}", booking.getId());
-            return booking.getId().toString();
-        } catch (HibernateException e) {
-            if (transaction != null) transaction.rollback();
-            log.error("Error creating booking: {}", e.getMessage());
-            throw new DataAccessException("Error creating booking", e);
+        persistEntity(booking);
+        if (booking.getId() == null) {
+            throw new DataAccessException("Failed to generate ID for booking");
         }
+        return booking.getId().toString();
     }
 
     @Override
     public Optional<Booking> getBookingById(String id) throws DataAccessException {
-        try (Session session = sessionFactory.openSession()) {
-            UUID uuid = UUID.fromString(id);
-            Booking booking = session.get(Booking.class, uuid);
-            if (booking != null) {
-                log.info("Booking found: {}", id);
-            } else {
-                log.warn("Booking not found: {}", id);
-            }
-            return Optional.ofNullable(booking);
-        } catch (HibernateException e) {
-            log.error("Error reading booking: {}", e.getMessage());
-            throw new DataAccessException("Error reading booking", e);
-        } catch (IllegalArgumentException e) {
-            log.error("Invalid UUID format: {}", id);
-            throw new DataAccessException("Invalid UUID format", e);
+        UUID uuid = parseUUID(id, "booking id");
+        // Нужно ли здесь JOIN FETCH trip/user?
+        // return findEntityById(uuid); // Простой get
+
+        log.debug("Looking up Booking by id {} with details", id);
+        try {
+            Query<Booking> query = getCurrentSession().createQuery(FIND_BOOKING_BY_ID_WITH_DETAILS_HQL, Booking.class);
+            query.setParameter("bookingId", uuid);
+            return query.uniqueResultOptional();
+        } catch (PersistenceException e) {
+            log.error("Error reading Booking by id {}: {}", id, e.getMessage());
+            throw new DataAccessException("Error reading Booking", e);
         }
     }
 
     @Override
     public void updateBooking(Booking booking) throws DataAccessException {
-        Transaction transaction = null;
-        try (Session session = sessionFactory.openSession()) {
-            transaction = session.beginTransaction();
-            session.merge(booking);
-            transaction.commit();
-            log.info("Booking updated successfully: {}", booking.getId());
-        } catch (HibernateException e) {
-            if (transaction != null) transaction.rollback();
-            log.error("Error updating booking: {}", e.getMessage());
-            throw new DataAccessException("Error updating booking", e);
-        }
+        mergeEntity(booking);
     }
 
     @Override
     public void deleteBooking(String id) throws DataAccessException {
-        Transaction transaction = null;
-        try (Session session = sessionFactory.openSession()) {
-            transaction = session.beginTransaction();
-            UUID uuid = UUID.fromString(id);
-            Booking booking = session.get(Booking.class, uuid);
-            if (booking != null) {
-                session.remove(booking);
-                transaction.commit();
-                log.info("Booking deleted successfully: {}", id);
-            } else {
-                log.warn("Booking not found for deletion: {}", id);
-            }
-        } catch (HibernateException e) {
-            if (transaction != null) transaction.rollback();
-            log.error("Error deleting booking: {}", e.getMessage());
-            throw new DataAccessException("Error deleting booking", e);
-        } catch (IllegalArgumentException e) {
-            log.error("Invalid UUID format: {}", id);
-            throw new DataAccessException("Invalid UUID format", e);
+        UUID uuid = parseUUID(id, "booking id");
+        deleteEntityById(uuid);
+    }
+
+    @Override
+    public int countBookedSeatsForTrip(String tripId) throws DataAccessException {
+        log.debug("Counting booked seats for trip ID: {}", tripId);
+        UUID tripUUID = parseUUID(tripId, "trip ID");
+        try {
+            Session session = getCurrentSession();
+            Query<Long> query = session.createQuery(COUNT_BOOKED_SEATS_HQL, Long.class);
+            query.setParameter("tripId", tripUUID);
+            // uniqueResult() вернет null, если нет результатов, getSingleResult() кинет исключение
+            Long result = query.uniqueResult();
+            // Если uniqueResult вернул null (нет броней), SUM будет null, COALESCE вернет 0.
+            // Если запрос ничего не вернул, result будет null.
+            return (result != null) ? result.intValue() : 0;
+        } catch (PersistenceException e) {
+            log.error("Error counting booked seats for trip {}: {}", tripId, e.getMessage());
+            throw new DataAccessException("Error counting booked seats", e);
+        }
+    }
+
+    @Override
+    public List<Booking> findBookingsByUserId(String userId) throws DataAccessException {
+        log.debug("Finding bookings for user ID: {}", userId);
+        UUID userUUID = parseUUID(userId, "user ID");
+        try {
+            Session session = getCurrentSession();
+            Query<Booking> query = session.createQuery(FIND_BOOKINGS_BY_USER_HQL, Booking.class);
+            query.setParameter("userId", userUUID);
+            return query.list();
+        } catch (PersistenceException e) {
+            log.error("Error finding bookings for user {}: {}", userId, e.getMessage());
+            throw new DataAccessException("Error finding bookings by user", e);
+        }
+    }
+
+    @Override
+    public Optional<Booking> findBookingByUserAndTrip(String userId, String tripId) throws DataAccessException {
+        log.debug("Finding booking for user ID {} and trip ID {}", userId, tripId);
+        UUID userUUID = parseUUID(userId, "user ID");
+        UUID tripUUID = parseUUID(tripId, "trip ID");
+        try {
+            Session session = getCurrentSession();
+            Query<Booking> query = session.createQuery(FIND_BOOKING_BY_USER_AND_TRIP_HQL, Booking.class);
+            query.setParameter("userId", userUUID);
+            query.setParameter("tripId", tripUUID);
+            return query.uniqueResultOptional();
+        } catch (PersistenceException e) {
+            log.error("Error finding booking by user {} and trip {}: {}", userId, tripId, e.getMessage());
+            throw new DataAccessException("Error finding booking by user and trip", e);
         }
     }
 }

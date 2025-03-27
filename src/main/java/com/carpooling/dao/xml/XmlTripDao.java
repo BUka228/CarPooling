@@ -4,15 +4,17 @@ package com.carpooling.dao.xml;
 import com.carpooling.dao.base.TripDao;
 import com.carpooling.entities.database.Trip;
 import com.carpooling.exceptions.dao.DataAccessException;
+import com.carpooling.exceptions.service.OperationNotSupportedException;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlRootElement;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -86,6 +88,11 @@ public class XmlTripDao extends AbstractXmlDao<Trip, XmlTripDao.TripWrapper> imp
             log.error("Error deleting trip: {}", e.getMessage());
             throw new DataAccessException("Error deleting trip", e);
         }
+    }
+
+    @Override
+    public List<Trip> findTrips(String startPoint, String endPoint, LocalDate date) throws DataAccessException {
+        return List.of();
     }
 
     @Override

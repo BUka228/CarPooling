@@ -49,54 +49,29 @@ public class Constants {
     public static final String BOOKINGS_CSV = "bookings.csv";
     public static final String RATINGS_CSV = "ratings.csv";
 
-    // SQL-запросы для работы с бронированиями
-    public static final String CREATE_BOOKING_SQL = "INSERT INTO bookings (id, seat_count, status, booking_date, passport_number, passport_expiry_date, trip_id, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-    public static final String GET_BOOKING_BY_ID_SQL = "SELECT * FROM bookings WHERE id = ?";
-    public static final String UPDATE_BOOKING_SQL = "UPDATE bookings SET seat_count = ?, status = ?, booking_date = ?, passport_number = ?, passport_expiry_date = ?, trip_id = ?, user_id = ? WHERE id = ?";
-    public static final String DELETE_BOOKING_SQL = "DELETE FROM bookings WHERE id = ?";
+    public static final String PREF_NODE_NAME = "com/carpooling/cli";
+    public static final String STORAGE_TYPE_KEY = "storageType";
+    public static final String USER_ID_KEY = "currentUserId";
 
-    // SQL-запросы для работы с рейтингами
-    public static final String CREATE_RATING_SQL = "INSERT INTO ratings (id, rating, comment, date, trip_id) VALUES (?, ?, ?, ?, ?)";
-    public static final String GET_RATING_BY_ID_SQL = "SELECT * FROM ratings WHERE id = ?";
-    public static final String UPDATE_RATING_SQL = "UPDATE ratings SET rating = ?, comment = ?, date = ?, trip_id = ? WHERE id = ?";
-    public static final String DELETE_RATING_SQL = "DELETE FROM ratings WHERE id = ?";
 
-    // SQL-запросы для работы с маршрутами
-    public static final String SQL_CREATE_ROUTE = "INSERT INTO routes (id, start_point, end_point, date, estimated_duration) VALUES (?, ?, ?, ?, ?)";
-    public static final String SQL_GET_ROUTE_BY_ID = "SELECT * FROM routes WHERE id = ?";
-    public static final String SQL_UPDATE_ROUTE = "UPDATE routes SET start_point = ?, end_point = ?, date = ?, estimated_duration = ? WHERE id = ?";
-    public static final String SQL_DELETE_ROUTE = "DELETE FROM routes WHERE id = ?";
 
-    // SQL-запросы для работы с поездками
-    public static final String CREATE_TRIP_SQL = "INSERT INTO trips (id, departure_time, max_passengers, creation_date, status, editable, user_id, route_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-    public static final String GET_TRIP_BY_ID_SQL = "SELECT * FROM trips WHERE id = ?";
-    public static final String UPDATE_TRIP_SQL = "UPDATE trips SET departure_time = ?, max_passengers = ?, creation_date = ?, status = ?, editable = ?, user_id = ?, route_id = ? WHERE id = ?";
-    public static final String DELETE_TRIP_SQL = "DELETE FROM trips WHERE id = ?";
+    // --- Booking HQL ---
+    public static final String COUNT_BOOKED_SEATS_HQL = "SELECT COALESCE(SUM(b.numberOfSeats), 0) FROM Booking b WHERE b.trip.id = :tripId"; // Используем COALESCE для 0, если нет броней
+    public static final String FIND_BOOKINGS_BY_USER_HQL = "FROM Booking b LEFT JOIN FETCH b.trip LEFT JOIN FETCH b.trip.route WHERE b.user.id = :userId ORDER BY b.bookingDate DESC";
+    public static final String FIND_BOOKING_BY_USER_AND_TRIP_HQL = "FROM Booking b WHERE b.user.id = :userId AND b.trip.id = :tripId";
+    public static final String FIND_BOOKING_BY_ID_WITH_DETAILS_HQL =
+            "FROM Booking b LEFT JOIN FETCH b.trip LEFT JOIN FETCH b.user WHERE b.id = :bookingId";
 
-    // SQL-запросы для работы с пользователями
-    public static final String CREATE_USER_SQL = """
-        INSERT INTO users (id, name, email, password, gender, phone, birth_date, address, preferences)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """;
-
-    public static final String GET_USER_BY_ID_SQL = """
-        SELECT * FROM users WHERE id = ?
-    """;
-
-    public static final String UPDATE_USER_SQL = """
-        UPDATE users
-        SET name = ?, email = ?, password = ?, gender = ?, phone = ?, birth_date = ?, address = ?, preferences = ?
-        WHERE id = ?
-    """;
-
-    public static final String DELETE_USER_SQL = """
-        DELETE FROM users WHERE id = ?
-    """;
-
-    // Прочие константы
-    public static final String PLANETS = "planets";
-    public static final String MONTHS = "months";
-    public static final String SYSTEM = "system";
+    // --- Rating HQL ---
+    public static final String FIND_RATING_BY_USER_AND_TRIP_HQL =
+            "FROM Rating r JOIN FETCH r.trip t JOIN FETCH t.user u WHERE u.id = :userId AND t.id = :tripId";
+    // --- Trip HQL ---
+    public static final String GET_TRIP_BY_ID_WITH_DETAILS_HQL = "FROM Trip t LEFT JOIN FETCH t.route LEFT JOIN FETCH t.user WHERE t.id = :tripId";
+    public static final String FIND_TRIPS_HQL_BASE = "SELECT DISTINCT t FROM Trip t JOIN FETCH t.route r WHERE 1=1"; // Добавил DISTINCT
+    public static final String FIND_TRIPS_HQL_START_POINT = " AND LOWER(r.startingPoint) LIKE LOWER(:startPoint)";
+    public static final String FIND_TRIPS_HQL_END_POINT = " AND LOWER(r.endingPoint) LIKE LOWER(:endPoint)";
+    public static final String FIND_TRIPS_HQL_DATE_RANGE = " AND t.departureTime >= :startDate AND t.departureTime < :endDate";
+    public static final String FIND_TRIPS_HQL_ORDER_BY = " ORDER BY t.departureTime ASC";
 
     private Constants() {
         // Приватный конструктор для предотвращения создания экземпляров класса

@@ -2,7 +2,10 @@ package com.carpooling.dao.base;
 
 import com.carpooling.entities.database.Trip;
 import com.carpooling.exceptions.dao.DataAccessException;
+import com.carpooling.exceptions.service.OperationNotSupportedException;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 
@@ -43,4 +46,15 @@ public interface TripDao {
      * @throws DataAccessException Если произошла ошибка при удалении поездки.
      */
     void deleteTrip(String id) throws DataAccessException;
+
+    /**
+     * Ищет поездки по критериям.
+     * @param startPoint (Может быть null) Начальная точка.
+     * @param endPoint   (Может быть null) Конечная точка.
+     * @param date       (Может быть null) Дата поездки.
+     * @return Список найденных поездок.
+     * @throws DataAccessException Если произошла ошибка доступа к данным.
+     * @throws OperationNotSupportedException Если операция не поддерживается.
+     */
+    List<Trip> findTrips(String startPoint, String endPoint, LocalDate date) throws DataAccessException, OperationNotSupportedException;
 }

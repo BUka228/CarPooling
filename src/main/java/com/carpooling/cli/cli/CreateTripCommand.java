@@ -1,106 +1,91 @@
 package com.carpooling.cli.cli;
 
 import com.carpooling.cli.context.CliContext;
-import com.carpooling.entities.database.Route;
-import com.carpooling.entities.database.Trip;
-import com.carpooling.exceptions.service.TripServiceException;
-import com.carpooling.exceptions.service.UserServiceException;
-import com.carpooling.factories.DaoFactory;
-import com.carpooling.services.base.RouteService;
+import com.carpooling.exceptions.dao.DataAccessException;
+import com.carpooling.exceptions.service.TripException;
+import com.carpooling.factories.ServiceFactory; // Используем ServiceFactory
 import com.carpooling.services.base.TripService;
-import com.carpooling.services.base.UserService;
-import com.carpooling.services.impl.RouteServiceImpl;
-import com.carpooling.services.impl.TripServiceImpl;
-import com.carpooling.services.impl.UserServiceImpl;
-import org.jetbrains.annotations.Contract;
-import org.jetbrains.annotations.NotNull;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
+import org.jetbrains.annotations.NotNull;
 
-import java.sql.Date;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Optional;
-
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 @Command(name = "createTrip", description = "Создание новой поездки")
 public class CreateTripCommand implements Runnable {
 
-    @Option(names = {"-d", "--departureDate"}, description = "Дата отправления (гггг-ММ-дд)", required = true)
-    private String departureDate;
+    @Option(names = {"-d", "--departureDate"}, required = true) private String departureDateStr;
+    @Option(names = {"-t", "--departureTime"}, required = true) private String departureTimeStr;
+    @Option(names = {"-m", "--maxPassengers"}, required = true) private byte maxPassengers;
+    @Option(names = {"-s", "--startPoint"}, required = true) private String startPoint;
+    @Option(names = {"-e", "--endPoint"}, required = true) private String endPoint;
 
-    @Option(names = {"-t", "--departureTime"}, description = "Время отправления (ЧЧ:мм:сс)", required = true)
-    private String departureTime;
-
-    @Option(names = {"-m", "--maxPassengers"}, description = "Максимальное количество пассажиров", required = true)
-    private byte maxPassengers;
-
-    @Option(names = {"-s", "--startPoint"}, description = "Начальная точка маршрута", required = true)
-    private String startPoint;
-
-    @Option(names = {"-e", "--endPoint"}, description = "Конечная точка маршрута", required = true)
-    private String endPoint;
+    private static final DateTimeFormatter TIME_FORMATTER_SECONDS = DateTimeFormatter.ofPattern("HH:mm:ss");
+    private static final DateTimeFormatter TIME_FORMATTER_NO_SECONDS = DateTimeFormatter.ofPattern("HH:mm");
 
     @Override
     public void run() {
-        // Инициализация сервисов
-        /*RouteService routeService = new RouteServiceImpl(DaoFactory.getRouteDao(CliContext.getCurrentStorageType()));
-        TripService tripService = new TripServiceImpl(
-                DaoFactory.getTripDao(CliContext.getCurrentStorageType()),
-                routeService
-        );
-        UserService userService = new UserServiceImpl(DaoFactory.getUserDao(CliContext.getCurrentStorageType()));
-
         String currentUserId = CliContext.getCurrentUserId();
         if (currentUserId == null) {
-            System.err.println("Ошибка: Вы не авторизованы.");
+            System.err.println("Ошибка: Вы должны войти в систему (login).");
             return;
         }
+        System.out.println("Попытка создания поездки пользователем ID: " + currentUserId);
 
         try {
-            // Получение объекта User по currentUserId
-            Optional<User> userOptional = userService.getUserById(currentUserId);
-            if (userOptional.isEmpty()) {
-                System.err.println("Ошибка: Пользователь с ID " + currentUserId + " не найден.");
+            TripService tripService = ServiceFactory.getTripService();
+
+            LocalDateTime departureDateTime = parseDepartureDateTime();
+            if (departureDateTime == null) return;
+
+            if (maxPassengers <= 0) {
+                System.err.println("Ошибка: Максимальное количество пассажиров должно быть больше нуля.");
                 return;
             }
-            User user = userOptional.get();
 
-            // Создание объекта Trip
-            Trip trip = new Trip();
-            trip.setDepartureTime(parseDateTime(departureDate, departureTime)); // Преобразуем строки в Date
-            trip.setMaxPassengers(maxPassengers);
-            trip.setCreationDate(new Date(System.currentTimeMillis()));
-            trip.setStatus("SCHEDULED");
-            trip.setEditable(true);
+            // Вызов сервиса
+            String tripId = tripService.createTrip(
+                    currentUserId,
+                    startPoint,
+                    endPoint,
+                    departureDateTime,
+                    maxPassengers
+            );
 
-            // Создание объекта Route
-            Route route = new Route();
-            route.setStartPoint(startPoint);
-            route.setEndPoint(endPoint);
-            route.setDate(parseDateTime(departureDate, departureTime)); // Преобразуем строки в Date
+            System.out.println("Поездка успешно создана!");
+            System.out.println("Trip ID: " + tripId);
+            System.out.println("Используемое хранилище: " + CliContext.getCurrentStorageType());
 
-            // Вызов метода createTrip с объектами Trip, Route и User
-            String tripId = tripService.createTrip(trip, route, user);
-            CliContext.setCurrentTripId(tripId);
-            System.out.println("Поездка создана с ID: " + tripId);
-        } catch (IllegalArgumentException e) {
-            System.err.println(e.getMessage()); // Выводим сообщение об ошибке формата даты
-        } catch (TripServiceException | UserServiceException e) {
-            System.err.println("Ошибка при создании поездки: " + e.getMessage());
-        }*/
+        } catch (TripException e) {
+            System.err.println("Ошибка создания поездки: " + e.getMessage());
+        } catch (DataAccessException e) {
+            System.err.println("Ошибка доступа к данным: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("Произошла непредвиденная ошибка: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
-    // Метод для преобразования строки в Date
-    @NotNull
-    @Contract("_, _ -> new")
-    private Date parseDateTime(String date, String time) {
+    // Helper для парсинга даты/времени
+    private LocalDateTime parseDepartureDateTime() {
         try {
-            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            String dateTime = date + " " + time;
-            return new Date(format.parse(dateTime).getTime());
-        } catch (ParseException e) {
-            throw new IllegalArgumentException("Неверный формат даты или времени: " + date + " " + time);
+            LocalDate date = LocalDate.parse(departureDateStr);
+            LocalTime time;
+            try {
+                // Сначала пробуем парсить как HH:mm:ss или HH:mm (стандартный парсер)
+                time = LocalTime.parse(departureTimeStr);
+            } catch (DateTimeParseException e1) {
+                System.err.println("Ошибка: Неверный формат времени '" + departureTimeStr + "'. Используйте ЧЧ:мм или ЧЧ:мм:сс.");
+                return null;
+            }
+            return LocalDateTime.of(date, time);
+        } catch (DateTimeParseException e) {
+            System.err.println("Ошибка: Неверный формат даты '" + departureDateStr + "'. Используйте гггг-ММ-дд.");
+            return null;
         }
     }
 }

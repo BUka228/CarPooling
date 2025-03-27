@@ -8,6 +8,17 @@ mongodb:
   db: myDatabase
   collection: history
 
+collections:
+  users: users_collection
+  trips: trips_collection
+  routes: routes_collection
+  bookings: bookings_collection
+  ratings: ratings_collection
+
+files:
+  xml_path: ./data/xml/
+  csv_path: ./data/csv/
+
 working:
   directory: /path/to/working/directory
 
@@ -17,4 +28,16 @@ planets:
   - Марс
   - Венера
 
-months: 1:Январь,2:Февраль,3:Март,4:Апрель,5:Май,6:Июнь,7:Июль,8:Август,9:Сентябрь,10:Октябрь,11:Ноябрь,12:Декабрь
+months:
+  1: Январь
+  2: Февраль
+  3: Март
+  4: Апрель
+  5: Май
+  6: Июнь
+  7: Июль
+  8: Август
+  9: Сентябрь
+  10: Октябрь
+  11: Ноябрь
+  12: Декабрь

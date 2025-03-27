@@ -3,6 +3,7 @@ package com.carpooling.dao.mongo;
 import com.carpooling.dao.base.UserDao;
 import com.carpooling.entities.database.User;
 import com.carpooling.exceptions.dao.DataAccessException;
+import com.carpooling.exceptions.service.OperationNotSupportedException;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.result.DeleteResult;
@@ -84,5 +85,10 @@ public class MongoUserDao extends AbstractMongoDao<User> implements UserDao {
             log.error("Error deleting user: {}", e.getMessage());
             throw new DataAccessException("Error deleting user", e);
         }
+    }
+
+    @Override
+    public Optional<User> findByEmail(String email) throws DataAccessException, OperationNotSupportedException {
+        return Optional.empty();
     }
 }

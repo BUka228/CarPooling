@@ -3,6 +3,7 @@ package com.carpooling.dao.mongo;
 import com.carpooling.dao.base.BookingDao;
 import com.carpooling.entities.database.Booking;
 import com.carpooling.exceptions.dao.DataAccessException;
+import com.carpooling.exceptions.service.OperationNotSupportedException;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.result.DeleteResult;
@@ -11,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -84,5 +86,20 @@ public class MongoBookingDao extends AbstractMongoDao<Booking> implements Bookin
             log.error("Error deleting booking: {}", e.getMessage());
             throw new DataAccessException("Error deleting booking", e);
         }
+    }
+
+    @Override
+    public int countBookedSeatsForTrip(String tripId) throws DataAccessException, OperationNotSupportedException {
+        return 0;
+    }
+
+    @Override
+    public List<Booking> findBookingsByUserId(String userId) throws DataAccessException, OperationNotSupportedException {
+        return List.of();
+    }
+
+    @Override
+    public Optional<Booking> findBookingByUserAndTrip(String userId, String tripId) throws DataAccessException, OperationNotSupportedException {
+        return Optional.empty();
     }
 }

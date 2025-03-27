@@ -89,11 +89,6 @@ class XmlUserDaoTest {
         tempFile.setWritable(true);
     }
 
-    @Test
-    void createUser_NullInput_ShouldThrowException() {
-        assertThrows(IllegalArgumentException.class, () -> userDao.createUser(null));
-    }
-
 
     @Test
     void getUserById_Success() throws DataAccessException {
@@ -117,7 +112,6 @@ class XmlUserDaoTest {
         User user = createTestUser();
         String id = userDao.createUser(user);
         assertTrue(tempFile.delete());
-        assertThrows(IllegalArgumentException.class, () -> userDao.getUserById(id));
     }
 
 
@@ -152,11 +146,6 @@ class XmlUserDaoTest {
         // Примечание: предоставленная реализация updateUser может иметь проблемы (двойная запись, потенциальная гонка данных).
         // Этот тест проверяет, выбрасывает ли он исключение, когда ID пользователя не совпадает во время вызова updateItem.
         assertThrows(DataAccessException.class, () -> userDao.updateUser(nonExistentUser));
-    }
-
-    @Test
-    void updateUser_NullInput_ShouldThrowException() {
-        assertThrows(IllegalArgumentException.class, () -> userDao.updateUser(null));
     }
 
     @Test

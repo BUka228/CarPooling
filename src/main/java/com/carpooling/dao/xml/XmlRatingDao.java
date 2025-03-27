@@ -4,15 +4,16 @@ package com.carpooling.dao.xml;
 import com.carpooling.dao.base.RatingDao;
 import com.carpooling.entities.database.Rating;
 import com.carpooling.exceptions.dao.DataAccessException;
+import com.carpooling.exceptions.service.OperationNotSupportedException;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlRootElement;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -85,6 +86,16 @@ public class XmlRatingDao extends AbstractXmlDao<Rating, XmlRatingDao.RatingWrap
             log.error("Error deleting rating: {}", e.getMessage());
             throw new DataAccessException("Error deleting rating", e);
         }
+    }
+
+    @Override
+    public List<Rating> findRatingsByTripId(String tripId) throws DataAccessException, OperationNotSupportedException {
+        return List.of();
+    }
+
+    @Override
+    public Optional<Rating> findRatingByUserAndTrip(String userId, String tripId) throws DataAccessException, OperationNotSupportedException {
+        return Optional.empty();
     }
 
     @Override

@@ -3,15 +3,16 @@ package com.carpooling.dao.xml;
 import com.carpooling.dao.base.UserDao;
 import com.carpooling.entities.database.User;
 import com.carpooling.exceptions.dao.DataAccessException;
+import com.carpooling.exceptions.service.OperationNotSupportedException;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlRootElement;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -85,6 +86,11 @@ public class XmlUserDao extends AbstractXmlDao<User, XmlUserDao.UserWrapper> imp
             log.error("Error deleting user: {}", e.getMessage());
             throw new DataAccessException("Error deleting user", e);
         }
+    }
+
+    @Override
+    public Optional<User> findByEmail(String email) throws DataAccessException {
+        return Optional.empty();
     }
 
     @Override

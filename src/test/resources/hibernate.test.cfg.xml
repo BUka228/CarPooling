@@ -1,0 +1,44 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE hibernate-configuration PUBLIC
+        "-//Hibernate/Hibernate Configuration DTD 3.0//EN"
+        "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
+<hibernate-configuration>
+    <session-factory>
+        <!-- Настройки подключения к H2 (in-memory) -->
+        <property name="hibernate.connection.driver_class">org.h2.Driver</property>
+        <!-- URL для in-memory базы данных; DB_CLOSE_DELAY=-1 предотвращает удаление БД при закрытии последнего соединения -->
+        <!-- MODE=PostgreSQL для совместимости; IGNORECASE=TRUE может помочь, если есть разница в регистре имен таблиц/колонок -->
+        <!-- ;DATABASE_TO_UPPER=false ВАЖНО, чтобы имена таблиц и колонок не преобразовывались в верхний регистр, как в Postgres по умолчанию -->
+        <property name="hibernate.connection.url">jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;IGNORECASE=TRUE;DATABASE_TO_UPPER=false</property>
+        <property name="hibernate.connection.username">sa</property> <!-- Стандартный пользователь H2 -->
+        <property name="hibernate.connection.password"/> <!-- Пароль по умолчанию пустой -->
+
+        <!-- Настройки H2 пула соединений (для тестов обычно достаточно) -->
+        <property name="hibernate.connection.pool_size">1</property>
+
+        <!-- Диалект для PostgreSQL (H2 будет его имитировать) -->
+        <property name="hibernate.dialect">org.hibernate.dialect.PostgreSQLDialect</property> <!-- Указываем диалект Postgres -->
+
+        <!-- Настройка CurrentSessionContext НЕ НУЖНА для тестов DAO, т.к. управляем сессией вручную -->
+        <!-- <property name="hibernate.current_session_context_class">thread</property> -->
+
+        <!-- Показывать SQL (полезно для отладки тестов) -->
+        <property name="hibernate.show_sql">true</property>
+        <property name="hibernate.format_sql">true</property>
+        <property name="hibernate.use_sql_comments">true</property>
+
+        <!-- Стратегия генерации схемы БД: create-drop - создать при старте, удалить при остановке -->
+        <property name="hibernate.hbm2ddl.auto">create-drop</property>
+
+        <property name="hibernate.current_session_context_class">com.carpooling.hibernate.ThreadLocalSessionContext</property>
+
+        <!-- Маппинг сущностей (такие же, как в основном файле) -->
+        <mapping class="com.carpooling.entities.database.User"/>
+        <mapping class="com.carpooling.entities.database.Address"/>
+        <mapping class="com.carpooling.entities.database.Route"/>
+        <mapping class="com.carpooling.entities.database.Trip"/>
+        <mapping class="com.carpooling.entities.database.Booking"/>
+        <mapping class="com.carpooling.entities.database.Rating"/>
+
+    </session-factory>
+</hibernate-configuration>

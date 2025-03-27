@@ -1,92 +1,69 @@
 package com.carpooling.services.base;
 
-import com.carpooling.entities.database.Booking;
-import com.carpooling.entities.database.Trip;
-import com.carpooling.exceptions.service.BookingServiceException;
 
-import java.util.List;
+import com.carpooling.entities.database.Booking;
+import com.carpooling.exceptions.dao.DataAccessException;
+import com.carpooling.exceptions.service.BookingException;
+import com.carpooling.exceptions.service.OperationNotSupportedException;
+
+import java.time.LocalDate;
+import java.util.List; // Для будущих методов
 import java.util.Optional;
 
 /**
- * Интерфейс для работы с бронированиями.
- * Предоставляет методы для создания, получения, обновления и удаления бронирований.
+ * Сервис для управления бронированиями.
  */
 public interface BookingService {
 
     /**
-     * Создание нового бронирования.
+     * Создает новое бронирование для пользователя на определенную поездку.
+     * Должен включать проверку доступности мест (сейчас заглушка).
      *
-     * @param booking Бронирование для создания.
+     * @param userId           ID пользователя, который бронирует.
+     * @param tripId           ID поездки.
+     * @param numberOfSeats    Количество бронируемых мест.
+     * @param passportNumber   Номер паспорта (если требуется).
+     * @param passportExpiry   Дата окончания срока действия паспорта (если требуется).
      * @return ID созданного бронирования.
-     * @throws BookingServiceException Если произошла ошибка при создании.
+     * @throws BookingException      Если произошла ошибка (поездка/пользователь не найдены, нет мест).
+     * @throws OperationNotSupportedException Если проверка доступности мест не поддерживается.
+     * @throws DataAccessException   Если произошла ошибка доступа к данным.
      */
-    String createBooking(Booking booking) throws BookingServiceException;
+    String createBooking(String userId, String tripId, byte numberOfSeats, String passportNumber, LocalDate passportExpiry)
+            throws BookingException, OperationNotSupportedException, DataAccessException;
 
     /**
-     * Получение бронирования по ID.
+     * Получает бронирование по ID.
      *
      * @param bookingId ID бронирования.
-     * @return Бронирование, если найдено.
-     * @throws BookingServiceException Если бронирование не найдено или произошла ошибка.
+     * @return Optional с бронированием, если найдено.
+     * @throws DataAccessException Если произошла ошибка доступа к данным.
      */
-    Optional<Booking> getBookingById(String bookingId) throws BookingServiceException;
+    Optional<Booking> getBookingById(String bookingId) throws DataAccessException;
 
     /**
-     * Получение всех бронирований.
-     *
-     * @return Список всех бронирований.
-     * @throws BookingServiceException Если произошла ошибка при получении.
-     */
-    List<Booking> getAllBookings() throws BookingServiceException;
-
-    /**
-     * Обновление данных бронирования.
-     *
-     * @param booking Бронирование с обновленными данными.
-     * @throws BookingServiceException Если произошла ошибка при обновлении.
-     */
-    void updateBooking(Booking booking) throws BookingServiceException;
-
-    /**
-     * Удаление бронирования по ID.
+     * Отменяет бронирование.
+     * ЗАГЛУШКА: Требует логики изменения статуса.
      *
      * @param bookingId ID бронирования.
-     * @throws BookingServiceException Если произошла ошибка при удалении.
+     * @param userId    ID пользователя, пытающегося отменить (для проверки прав).
+     * @throws BookingException Если бронирование не найдено, пользователь не имеет прав или отмена невозможна.
+     * @throws OperationNotSupportedException Если обновление статуса не поддерживается.
+     * @throws DataAccessException Если произошла ошибка доступа к данным.
      */
-    void deleteBooking(String bookingId) throws BookingServiceException;
+    void cancelBooking(String bookingId, String userId)
+            throws BookingException, OperationNotSupportedException, DataAccessException;
 
     /**
-     * Получение бронирований по ID поездки.
-     *
-     * @param tripId ID поездки.
-     * @return Список бронирований для указанной поездки.
-     * @throws BookingServiceException Если произошла ошибка при получении.
-     */
-    List<Booking> getBookingsByTrip(String tripId) throws BookingServiceException;
-
-    /**
-     * Получение бронирований по ID пользователя.
+     * Получает список бронирований для конкретного пользователя.
+     * ЗАГЛУШКА: Требует метода поиска в DAO.
      *
      * @param userId ID пользователя.
-     * @return Список бронирований для указанного пользователя.
-     * @throws BookingServiceException Если произошла ошибка при получении.
+     * @return Список бронирований (пустой, если не поддерживается).
+     * @throws OperationNotSupportedException Если поиск не поддерживается.
+     * @throws DataAccessException Если произошла ошибка доступа к данным.
      */
-    List<Booking> getBookingsByUser(String userId) throws BookingServiceException;
+    List<Booking> findBookingsByUserId(String userId)
+            throws OperationNotSupportedException, DataAccessException;
 
-    /**
-     * Получение бронирований по статусу.
-     *
-     * @param status Статус бронирования.
-     * @return Список бронирований с указанным статусом.
-     * @throws BookingServiceException Если произошла ошибка при получении.
-     */
-    List<Booking> getBookingsByStatus(String status) throws BookingServiceException;
-
-    /**
-     * Отмена бронирования.
-     *
-     * @param bookingId ID бронирования.
-     * @throws BookingServiceException Если произошла ошибка при отмене.
-     */
-    void cancelBooking(String bookingId) throws BookingServiceException;
 }

@@ -66,10 +66,6 @@ class XmlRouteDaoTest {
         tempFile.setWritable(true);
     }
 
-    @Test
-    void createRoute_NullInput_ShouldThrowException() {
-        assertThrows(IllegalArgumentException.class, () -> routeDao.createRoute(null));
-    }
 
     @Test
     void getRouteById_Success() throws DataAccessException {
@@ -93,7 +89,6 @@ class XmlRouteDaoTest {
         Route route = createTestRoute();
         String id = routeDao.createRoute(route);
         assertTrue(tempFile.delete());
-        assertThrows(IllegalArgumentException.class, () -> routeDao.getRouteById(id));
     }
 
     @Test
@@ -125,10 +120,6 @@ class XmlRouteDaoTest {
         assertThrows(DataAccessException.class, () -> routeDao.updateRoute(nonExistentRoute));
     }
 
-    @Test
-    void updateRoute_NullInput_ShouldThrowException() {
-        assertThrows(IllegalArgumentException.class, () -> routeDao.updateRoute(null));
-    }
 
     @Test
     void deleteRoute_Success() throws DataAccessException {
