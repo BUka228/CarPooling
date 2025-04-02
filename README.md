@@ -238,4 +238,3 @@ resetPrefs
 
 -   **Email:** manachinsky88@gmail.com
 -   **GitHub:** [Buka228](https://github.com/Buka228)
-
