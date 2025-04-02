@@ -215,19 +215,170 @@ resetPrefs
 
 Описывает основные сущности приложения (`User`, `Trip`, `Route`, `Booking`, `Rating`, `Address`) и их атрибуты, а также связи между ними (например, `User` -> `Trip`, `Trip` -> `Booking`, `Trip` -> `Route`, `Booking` -> `User` и т.д.), показывая отношения "один-ко-многим" и "многие-к-одному".
 
-![Диаграмма классов](https://www.plantuml.com/plantuml/png/TLJ1RjD04BtxArOvKhM5gm-eGlm1Ns2e1PPSHuhD0I6as444gKWLdAk6yWMMoLB7sEONPl-8jxCcRDPnSeXtzisRcVSclaYpO96zlOgzLt6Gfe8srDDlzOKUy5jHgGgI-YpUUmAVa-XI-29ACdEYcbfrWyYBR14bhqqml0gYs8dH7r0j3VNu2c4dQCgIL1znsRaPM-whfE-u_8MJf8vgxkDva8K3gAGjAagLZ-hfCB9GLwrLOMKFi0-UBOQa1u0RAYSag9WECj0tTJsWIxiLQj5Bet8MQuNJ1ktdE9TelcPLAb-yV3V0zzFTuuB9J7yM8x8B3L8hbJkwyMXShz3SQiMzNTFE5y_cypWC4d5-BgXYxfRrwwZNX336oURE_fMtLBdLNghFcbqL4wfqmAofr7xpymtzq7ApZeuVZROOHgrTu8JjjhQ0Vc83-ttwXllUwgLYVOS5_Z-cBz8tyqLc3VILKxh3aKbEZDOmTOs2KXEobhVcMLW-djWkMQFO5hk5NQkDaZsCaa3mtl3QBdNsSSexeoUBpsHqp-JGSqp0PQ33Neax8-VqklEAxFHw0FLpf4kBB_9vy2Kmk-CUMgKdNpYdfq_5xF7PsQEPyp_q3ey6-8I1KquUJvavg-oYh0viORoBCBd46_Cl)
+```mermaid
+classDiagram
+    class User {
+        +UUID id
+        +String name
+        +String email
+        +String password
+        +String gender
+        +String phone
+        +Date birthDate
+        +Address address
+        +String preferences
+    }
+    class Trip {
+        +UUID id
+        +Date departureTime
+        +byte maxPassengers
+        +Date creationDate
+        +String status
+        +Boolean editable
+    }
+    class Route {
+        +UUID id
+        +String startPoint
+        +String endPoint
+        +Date date
+        +short estimatedDuration
+    }
+    class Booking {
+        +UUID id
+        +byte seatCount
+        +String status
+        +Date bookingDate
+        +String passportNumber
+        +Date passportExpiryDate
+    }
+    class Rating {
+        +UUID id
+        +int rating
+        +String comment
+        +Date date
+    }
+    class Address {
+        +String street
+        +String zipCode
+        +String city
+    }
+    User -- "0..*" Trip
+    User "*" -- "1" Address : contains
+    Trip -- "1..*" Booking
+    Trip -- "1" Route
+    Trip -- "0..*" Rating
+```
 
 ### Диаграмма вариантов использования (Use Case)
 
 Иллюстрирует взаимодействие пользователя (Actor) с системой. Основные варианты использования: Регистрация, Авторизация, Создание поездки, Поиск поездок (не реализован в CLI?), Бронирование места, Оценка поездки, Управление профилем (не реализовано в CLI?), Управление поездкой (отмена), Выбор хранилища.
 
-![Диаграмма вариантов использования](https://www.plantuml.com/plantuml/png/hLLDJi905Dxt5BEqY_O0XXWsBZm6WQea2AOEYGiNY3_4n8qNG8aNA6XZRSjmXJStydiKcmOBKmmbQTCtt_VrVU-z6UfNik7B_aN7wdYdKiYUyDjdvrAqshxNbErUrxAiHbFsV46lf2ZHp_I5vum2FQIGt_Fr2KNwTXbDAR3usaGHZdCa3dYLAHGBMf2YXRxJGpsYY68AR1DvGWehdnJG78mmamWv17faMqQ4SDcnorfZQ2_q0CWPVrjGb84JP3G29UCZKuNVL3-jGj-sE1GdtMQdt_ACPb-WhvY69w_dMQKKSjdOSYMKSFkNUTO80u6Cfx_4GauLzMgkosfmd530eVLAGV7uMdhTLjK4UOJsLzcABcuSPrkP5SpCSVyWLUJjINtEK8fN4n03y93pRUDiZFNZqdZyj_R6FSIPuDCfxaCz4Aizg12EA2ggAOgDQkzvivAyEHo2tZrUE9Z2plza2huKEcnLn0dNpJInapVXYbE_e-uRWgmSmqFULkCtS1dEBr5pdBKpqNmcbPFC0rfAt3fNvOJTfgbSeyeCRQIQ-rPAhUDmmd_O3m00)
+```mermaid
+graph LR
+    User[User];
+
+    uc_search(Search Ride);
+    uc_create_trip(Create Trip);
+    uc_book(Book Seat);
+    uc_rate(Rate Trip);
+    uc_history(View Trip History);
+    uc_profile(Manage Profile);
+    uc_manage_trip(Manage Trip);
+
+    sub_message(Send/Receive Messages);
+    sub_cancel_booking(Cancel Booking);
+    sub_pay(Pay For Trip);
+    sub_book_one(Book Single Seat);
+    sub_book_many(Book Multiple Seats);
+    sub_delete_trip(Delete Trip);
+    sub_edit_trip(Edit Trip);
+
+    User --> uc_search;
+    User --> uc_create_trip;
+    User --> uc_book;
+    User --> uc_rate;
+    User --> uc_history;
+    User --> uc_profile;
+    User --> uc_manage_trip;
+
+    uc_create_trip -.->|include| sub_message;
+    uc_book -.->|include| sub_cancel_booking;
+    sub_pay -.->|extend| uc_book;
+    uc_book -.->|include| sub_message;
+    sub_book_one -->|is a type of| uc_book;  
+    sub_book_many -->|is a type of| uc_book; 
+    uc_manage_trip -.->|include| sub_delete_trip;
+    uc_manage_trip -.->|include| sub_edit_trip;
+```
 
 ### Диаграмма базы данных (ERD)
 
 Показывает структуру таблиц в реляционной базе данных (PostgreSQL), их столбцы, типы данных, первичные и внешние ключи, а также связи между таблицами, отражающие отношения между сущностями.
 
-![Диаграмма базы данных](https://www.plantuml.com/plantuml/png/bLNHQjH057tFL-HT-WDIIX4Hn1V1BuWqQ62Rm7PyA4rXauWLAXHzBbth5uIOiTcuQN_XpXzvvawwZfDDP7SVDZFtddldd7CdUtWYWhduS3ppmbX4ujId9TtJR_M5xl1RKQboadhjdta-Fa-Y8_-f7yN2tzz__UhWm6nIGsjrXS0RCO_YTsOpF0wYcRD73wYuC1s68MmxcwOxIVKHmSv5r7oyahuZ-0ihIHqrV8xdWGXD4i8rEagL3VhfRQ3GLrset4BtQUUUBGhYTyXkgPoMekAoa8E-gSiULFvxf3KErQgCLIkmMe97XdK95WtBKm7mzfG1Dj5RXBZU5gAeaEiqLGoe6gBSDDSDLC4dlAGL4fyboImCOjk4eVil_r9zmLGVUQ3OPrrGvMwAfTwrdJUjNeVK2ofrJtw-eX_Q7fRTyQ_L8q4ImUb4evxZ0N8_iUFt6_oIbQ-r0En3Jvrpe2qFxCdxP2viQbyPr3tQPfmXEKsovHuDEajshSBwsZopxrEMEgIs7y2z0w00ioHIUDHuv1SQFbRrngZBLd0zkkNwKDSfuSZwO5yKPoHs6Z5Rv1lZrN_l7i_vIiyuad-Q14loDRuemvekaBCQORy38nnoz8MPfdjxoPdpxW1SPPjRB5NkEN636X-i7b-pcnZJqGgsQa013FRREfuZFqsTMye8TDgOfGh67eRn4Vuj_W00)
+```mermaid
+erDiagram
+    USER {
+        UUID id PK
+        String name
+        String email
+        String password
+        String gender
+        String phone
+        LocalDate birthDate
+        String preferences
+    }
+
+    ADDRESS {
+        String street
+        String zipCode
+        String city
+    }
+
+    TRIP {
+        UUID id PK
+        LocalDateTime departureTime
+        byte maxPassengers
+        LocalDateTime creationDate
+        String status
+        Boolean editable
+        UUID userId FK
+        UUID routeId FK
+    }
+
+    ROUTE {
+        UUID id PK
+        String startPoint
+        String endPoint
+        LocalDateTime date
+        short estimatedDuration
+    }
+
+    BOOKING {
+        UUID id PK
+        byte seatCount
+        String status
+        LocalDateTime bookingDate
+        String passportNumber
+        LocalDate passportExpiryDate
+        UUID tripId FK
+        UUID userId FK
+    }
+
+    RATING {
+        UUID id PK
+        int rating
+        String comment
+        LocalDateTime date
+        UUID tripId FK
+    }
+
+    USER ||--o{ TRIP : creates
+    USER ||--o{ BOOKING : creates
+    USER ||--|| ADDRESS : contains
+    TRIP ||--o{ BOOKING : contains
+    TRIP ||--o{ RATING : has
+    TRIP ||--|| ROUTE : uses
+```
 
 
 ## Лицензия
