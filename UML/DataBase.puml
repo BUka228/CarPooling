@@ -1,18 +1,4 @@
 @startuml
-' Определение Enum (не отображаются как таблицы, но полезны для типов)
-enum BookingStatus {
-  PENDING
-  CONFIRMED
-  CANCELLED
-  COMPLETED
-}
-
-enum TripStatus {
-  PLANNED
-  ACTIVE
-  COMPLETED
-  CANCELLED
-}
 
 entity Пользователь {
   +id : UUID <<PK>>

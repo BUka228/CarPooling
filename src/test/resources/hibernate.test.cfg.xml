@@ -32,6 +32,8 @@
 
         <property name="hibernate.current_session_context_class">com.carpooling.hibernate.ThreadLocalSessionContext</property>
 
+        <!--  <property name="hibernate.hbm2ddl.auto">update</property> -->
+
         <!-- Маппинг сущностей (такие же, как в основном файле) -->
         <mapping class="com.carpooling.entities.database.User"/>
         <mapping class="com.carpooling.entities.database.Address"/>
