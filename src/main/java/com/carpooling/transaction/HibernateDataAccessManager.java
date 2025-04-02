@@ -2,6 +2,7 @@ package com.carpooling.transaction;
 
 import com.carpooling.exceptions.dao.DataAccessException;
 import com.carpooling.hibernate.ThreadLocalSessionContext;
+import lombok.extern.slf4j.Slf4j;
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -9,9 +10,9 @@ import org.hibernate.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Slf4j
 public class HibernateDataAccessManager implements DataAccessManager {
 
-    private static final Logger log = LoggerFactory.getLogger(HibernateDataAccessManager.class);
     private final SessionFactory sessionFactory;
 
     public HibernateDataAccessManager(SessionFactory sessionFactory) {

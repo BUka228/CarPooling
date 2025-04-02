@@ -20,7 +20,8 @@ import java.util.regex.Pattern;
                 CreateTripCommand.class,
                 BookSeatCommand.class,
                 RateTripCommand.class,
-                SetStorageCommand.class
+                SetStorageCommand.class,
+                ResetPreferencesCommand.class
         })
 @Slf4j
 public class Main implements Runnable {

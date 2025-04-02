@@ -19,7 +19,7 @@ public class HibernateTestUtil {
         try {
             log.info("Building SessionFactory from test configuration (hibernate.cfg.xml)...");
             // Убедитесь, что загружается именно тестовая конфигурация!
-            return new Configuration().configure("hibernate.cfg.xml") // Имя тестового файла
+            return new Configuration().configure("hibernate.test.cfg.xml") // Имя тестового файла
                     .buildSessionFactory();
         } catch (Throwable ex) {
             log.error("Initial SessionFactory creation for tests failed!", ex);

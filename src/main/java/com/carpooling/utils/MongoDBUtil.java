@@ -69,43 +69,4 @@ public class MongoDBUtil {
             throw new RuntimeException("Ошибка при закрытии соединения с MongoDB", e);
         }
     }
-
-    /**
-     * Преобразует объект Java в MongoDB Document.
-     * @param object Объект для преобразования.
-     * @return Документ MongoDB.
-     */
-    public static Document toDocument(Object object) {
-        try {
-            String json = objectMapper.writeValueAsString(object);
-            Document document = Document.parse(json);
-            document.remove("id");
-            return document;
-        } catch (JsonProcessingException e) {
-            log.error("Ошибка при преобразовании объекта в документ: {}", object, e);
-            throw new IllegalStateException("Не удалось преобразовать объект в документ.", e);
-        }
-    }
-
-    /**
-     * Преобразует MongoDB Document в объект Java.
-     * @param document Документ MongoDB.
-     * @param clazz    Класс объекта.
-     * @param <T>      Тип объекта.
-     * @return Объект Java.
-     */
-    public static  <T> T fromDocument(Document document, Class<T> clazz) {
-        try {
-            // Убираем _id, заменяем его на id
-            if (document.containsKey("_id")) {
-                document.put("id", document.getObjectId("_id").toHexString());
-                document.remove("_id");
-            }
-            String json = document.toJson();
-            return objectMapper.readValue(json, clazz);
-        } catch (Exception e) {
-            log.error("Ошибка при преобразовании документа в объект: {}", document, e);
-            throw new IllegalStateException("Не удалось преобразовать документ в объект.", e);
-        }
-    }
 }

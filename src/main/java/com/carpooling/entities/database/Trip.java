@@ -81,7 +81,7 @@ public class Trip {
     @EqualsAndHashCode.Exclude
     private Set<Booking> bookings = new HashSet<>();
 
-    // Пересмотрите CascadeType.ALL
+    // Пересмотреть CascadeType.ALL
     @OneToMany(mappedBy = "trip", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @JsonIgnore
     @XmlTransient
