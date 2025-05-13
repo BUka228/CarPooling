@@ -59,5 +59,20 @@
         <mapping class="inheritance.joined.model.CarJoined"/>
         <mapping class="inheritance.joined.model.MotorcycleJoined"/>
 
+        <mapping class="collections.model.ShowcaseEntity"/>
+
+
+
+        <mapping class="relations.onetoone.model.Employee"/>
+        <mapping class="relations.onetoone.model.EmployeeProfile"/>
+
+
+        <mapping class="relations.onetoonefk.model.Manager"/>
+        <mapping class="relations.onetoonefk.model.Office"/>
+
+
+        <mapping class="relations.manytomany.model.Student"/>
+        <mapping class="relations.manytomany.model.Course"/>
+
     </session-factory>
 </hibernate-configuration>

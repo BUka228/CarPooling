@@ -8,11 +8,11 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Optional;
 
-public class GenericVehicleDao<T, ID extends Serializable> { // ID должен быть Serializable
+public class GenericDao<T, ID extends Serializable> { // ID должен быть Serializable
     private final SessionFactory sessionFactory;
     private final Class<T> entityClass;
 
-    public GenericVehicleDao(SessionFactory sessionFactory, Class<T> entityClass) {
+    public GenericDao(SessionFactory sessionFactory, Class<T> entityClass) {
         this.sessionFactory = sessionFactory;
         this.entityClass = entityClass;
     }

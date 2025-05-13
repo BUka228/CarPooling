@@ -1,6 +1,6 @@
 package inheritance.joined;
 
-import inheritance.common.GenericVehicleDao; // Путь к Generic DAO
+import inheritance.common.GenericDao; // Путь к Generic DAO
 import inheritance.joined.model.CarJoined;
 import inheritance.joined.model.MotorcycleJoined;
 import inheritance.joined.model.VehicleJoined;
@@ -28,9 +28,9 @@ class JoinedTableStrategyTest {
     private Transaction transaction;
 
     // DAO для каждого типа
-    private GenericVehicleDao<VehicleJoined, Long> vehicleDao;
-    private GenericVehicleDao<CarJoined, Long> carDao;
-    private GenericVehicleDao<MotorcycleJoined, Long> motorcycleDao;
+    private GenericDao<VehicleJoined, Long> vehicleDao;
+    private GenericDao<CarJoined, Long> carDao;
+    private GenericDao<MotorcycleJoined, Long> motorcycleDao;
 
     @BeforeAll
     static void setUpFactory() {
@@ -44,9 +44,9 @@ class JoinedTableStrategyTest {
 
     @BeforeEach
     void setUp() {
-        vehicleDao = new GenericVehicleDao<>(sessionFactory, VehicleJoined.class);
-        carDao = new GenericVehicleDao<>(sessionFactory, CarJoined.class);
-        motorcycleDao = new GenericVehicleDao<>(sessionFactory, MotorcycleJoined.class);
+        vehicleDao = new GenericDao<>(sessionFactory, VehicleJoined.class);
+        carDao = new GenericDao<>(sessionFactory, CarJoined.class);
+        motorcycleDao = new GenericDao<>(sessionFactory, MotorcycleJoined.class);
 
         session = sessionFactory.openSession();
         ThreadLocalSessionContext.bind(session);

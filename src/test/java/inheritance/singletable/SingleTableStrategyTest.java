@@ -1,6 +1,6 @@
 package inheritance.singletable;
 
-import inheritance.common.GenericVehicleDao; // Путь к Generic DAO
+import inheritance.common.GenericDao; // Путь к Generic DAO
 import inheritance.singletable.model.CarSingleTable;
 import inheritance.singletable.model.MotorcycleSingleTable;
 import inheritance.singletable.model.VehicleSingleTable;
@@ -29,9 +29,9 @@ class SingleTableStrategyTest {
     private Transaction transaction;
 
     // DAO для каждого типа
-    private GenericVehicleDao<VehicleSingleTable, Long> vehicleDao;
-    private GenericVehicleDao<CarSingleTable, Long> carDao;
-    private GenericVehicleDao<MotorcycleSingleTable, Long> motorcycleDao;
+    private GenericDao<VehicleSingleTable, Long> vehicleDao;
+    private GenericDao<CarSingleTable, Long> carDao;
+    private GenericDao<MotorcycleSingleTable, Long> motorcycleDao;
 
     @BeforeAll
     static void setUpFactory() {
@@ -45,9 +45,9 @@ class SingleTableStrategyTest {
 
     @BeforeEach
     void setUp() {
-        vehicleDao = new GenericVehicleDao<>(sessionFactory, VehicleSingleTable.class);
-        carDao = new GenericVehicleDao<>(sessionFactory, CarSingleTable.class);
-        motorcycleDao = new GenericVehicleDao<>(sessionFactory, MotorcycleSingleTable.class);
+        vehicleDao = new GenericDao<>(sessionFactory, VehicleSingleTable.class);
+        carDao = new GenericDao<>(sessionFactory, CarSingleTable.class);
+        motorcycleDao = new GenericDao<>(sessionFactory, MotorcycleSingleTable.class);
 
         session = sessionFactory.openSession();
         ThreadLocalSessionContext.bind(session);

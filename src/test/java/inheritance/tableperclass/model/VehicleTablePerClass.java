@@ -12,8 +12,7 @@ import java.io.Serializable;
 @Entity
 @Table(name = "vehicles_tpc") // Таблица для базового класса Vehicle
 @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS) // Ключевая аннотация
-// @MappedSuperclass // Эту аннотацию здесь использовать не нужно, если Vehicle - сущность
-public class VehicleTablePerClass implements Serializable { // Может быть и не абстрактным
+public class VehicleTablePerClass implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
