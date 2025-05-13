@@ -27,7 +27,7 @@
 
         <!-- Автоматическое обнаружение аннотированных классов -->
         <!-- Оставляем, но явное маппирование ниже надежнее -->
-        <property name="hibernate.archive.autodetection">class, hbm</property>
+        <!-- <property name="hibernate.archive.autodetection">class, hbm</property>  -->
 
         <!-- Размер Batch -->
         <property name="hibernate.jdbc.batch_size">30</property>

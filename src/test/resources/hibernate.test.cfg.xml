@@ -32,7 +32,6 @@
 
         <property name="hibernate.current_session_context_class">com.carpooling.hibernate.ThreadLocalSessionContext</property>
 
-        <!--  <property name="hibernate.hbm2ddl.auto">update</property> -->
 
         <!-- Маппинг сущностей (такие же, как в основном файле) -->
         <mapping class="com.carpooling.entities.database.User"/>
@@ -41,6 +40,24 @@
         <mapping class="com.carpooling.entities.database.Trip"/>
         <mapping class="com.carpooling.entities.database.Booking"/>
         <mapping class="com.carpooling.entities.database.Rating"/>
+
+
+        <mapping class="inheritance.mappedsuperclass.model.CarMapped"/>
+        <mapping class="inheritance.mappedsuperclass.model.MotorcycleMapped"/>
+
+        <mapping class="inheritance.tableperclass.model.VehicleTablePerClass"/>
+        <mapping class="inheritance.tableperclass.model.CarTablePerClass"/>
+        <mapping class="inheritance.tableperclass.model.MotorcycleTablePerClass"/>
+
+
+        <mapping class="inheritance.singletable.model.VehicleSingleTable"/>
+        <mapping class="inheritance.singletable.model.CarSingleTable"/>
+        <mapping class="inheritance.singletable.model.MotorcycleSingleTable"/>
+
+
+        <mapping class="inheritance.joined.model.VehicleJoined"/>
+        <mapping class="inheritance.joined.model.CarJoined"/>
+        <mapping class="inheritance.joined.model.MotorcycleJoined"/>
 
     </session-factory>
 </hibernate-configuration>

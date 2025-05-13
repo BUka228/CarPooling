@@ -73,6 +73,22 @@ public class Constants {
     public static final String FIND_TRIPS_HQL_DATE_RANGE = " AND t.departureTime >= :startDate AND t.departureTime < :endDate";
     public static final String FIND_TRIPS_HQL_ORDER_BY = " ORDER BY t.departureTime ASC";
 
+
+    // --- Database Metadata Native SQL (PostgreSQL specific) ---
+    public static final String GET_TABLE_NAMES_SQL = "SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public' ORDER BY tablename";
+    public static final String GET_TABLE_ROW_COUNT_SQL_TEMPLATE = "SELECT COUNT(*) FROM %s";
+
+    public static final String GET_TABLE_COLUMN_INFO_SQL = "SELECT column_name, data_type FROM information_schema.columns " +
+            "WHERE table_schema = 'public' AND table_name = :tableName ORDER BY ordinal_position";
+
+    public static final String GET_DATABASE_SIZE_SQL = "SELECT pg_size_pretty(pg_database_size(current_database()))";
+
+
+
+    public static final String DEFAULT_HIBERNATE_CONFIG_PATH = "hibernate.cfg.xml"; // Имя файла по умолчанию
+    public static final String HIBERNATE_CONFIG_PROPERTY = "hibernate.config.file"; // Системное свойство
+
+
     private Constants() {
         // Приватный конструктор для предотвращения создания экземпляров класса
     }
